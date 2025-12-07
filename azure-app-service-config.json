@@ -1,0 +1,74 @@
+{
+  "name": "instagram-bot-app",
+  "location": "South Central US",
+  "sku": {
+    "name": "B1",
+    "tier": "Basic"
+  },
+  "properties": {
+    "httpsOnly": true,
+    "clientAffinityEnabled": false,
+    "siteConfig": {
+      "pythonVersion": "3.12",
+      "scmType": "GitHub",
+      "alwaysOn": true,
+      "appSettings": [
+        {
+          "name": "ENVIRONMENT",
+          "value": "production"
+        },
+        {
+          "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "autoScaleSettings": {
+    "enabled": true,
+    "profiles": [
+      {
+        "name": "Default",
+        "capacity": {
+          "minimum": 1,
+          "maximum": 10,
+          "default": 2
+        },
+        "rules": [
+          {
+            "metricTrigger": {
+              "metricName": "CpuPercentage",
+              "operator": "GreaterThan",
+              "threshold": 70,
+              "timeAggregation": "Average",
+              "timeGrain": "PT1M",
+              "timeWindow": "PT10M"
+            },
+            "scaleAction": {
+              "direction": "Increase",
+              "type": "ChangeCount",
+              "value": 1,
+              "cooldown": "PT5M"
+            }
+          },
+          {
+            "metricTrigger": {
+              "metricName": "CpuPercentage",
+              "operator": "LessThan",
+              "threshold": 30,
+              "timeAggregation": "Average",
+              "timeGrain": "PT1M",
+              "timeWindow": "PT10M"
+            },
+            "scaleAction": {
+              "direction": "Decrease",
+              "type": "ChangeCount",
+              "value": 1,
+              "cooldown": "PT5M"
+            }
+          }
+        ]
+      }
+    ]
+  }
+} 

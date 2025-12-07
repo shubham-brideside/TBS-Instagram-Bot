@@ -1,0 +1,83 @@
+# Instagram Bot Environment Variables Template
+# Copy these variables to your .env file or Azure App Service Configuration
+
+# =============================================================================
+# CORE APPLICATION SETTINGS
+# =============================================================================
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+
+# =============================================================================
+# INSTAGRAM API CONFIGURATION
+# =============================================================================
+# Instagram Graph API Access Token
+ACCESS_TOKEN=your_instagram_access_token_here
+
+# Instagram Account ID (your business account ID)
+IG_ACCOUNT_ID=your_instagram_account_id_here
+
+# Webhook Verification Token (set this to any secret string)
+VERIFY_TOKEN=your_webhook_verification_token_here
+
+# =============================================================================
+# OPENAI CONFIGURATION
+# =============================================================================
+# OpenAI API Key
+OPENAI_API_KEY=your_openai_api_key_here
+
+# OpenAI Model to use (default: gpt-4.1-mini-2025-04-14)
+OPENAI_MODEL=gpt-4.1-mini-2025-04-14
+
+# OpenAI Base URL (optional, only if using a custom endpoint)
+OPENAI_BASE_URL=https://api.openai.com/v1
+
+# =============================================================================
+# GROQ AI CONFIGURATION
+# =============================================================================
+# Groq API Key for AI responses
+GROQ_API_KEY=your_groq_api_key_here
+
+# Groq Model to use (e.g., llama3-8b-8192, mixtral-8x7b-32768)
+GROQ_MODEL=llama3-8b-8192
+
+# =============================================================================
+# PIPEDRIVE CRM CONFIGURATION
+# =============================================================================
+# Pipedrive API Token
+PIPEDRIVE_API_TOKEN=your_pipedrive_api_token_here
+
+# Pipedrive Base URL (e.g., https://yourcompany.pipedrive.com)
+PIPEDRIVE_BASE_URL=https://yourcompany.pipedrive.com
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+# Database connection details
+DB_HOST=your_database_host
+DB_DATABASE=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_CHARSET=utf8mb4
+
+# =============================================================================
+# PIPEDRIVE FIELD MAPPING (OPTIONAL)
+# =============================================================================
+# These are the default field IDs from your config.py
+# You can override them if your Pipedrive setup uses different field IDs
+
+# Contact Fields
+PIPEDRIVE_CONTACT_INSTAGRAM_USERNAME_FIELD=f8cc78917de8bd1bd757fe8720213d518a3c6f86
+
+# Deal Fields
+PIPEDRIVE_DEAL_EVENT_TYPE_FIELD=b928fb0cfa31cdd64a657e714c6e9aea6341d01b
+PIPEDRIVE_DEAL_EVENT_DATE_FIELD=9d9ca82c5b3f66b7186b4f02ceffe28e19e96f78
+PIPEDRIVE_DEAL_VENUE_FIELD=4079f1903347e264de4e0b5f1ae2116b4066d04f
+PIPEDRIVE_DEAL_CONVERSATION_SUMMARY_FIELD=0d65a25d3d96854f664ce03be04d46240bfb9958
+
+# =============================================================================
+# INSTRUCTIONS
+# =============================================================================
+# 1. For local development: Create a .env file with these values
+# 2. For Azure deployment: Use the azure-env-setup.ps1 script
+#    or manually configure these variables in Azure Portal
+# 3. Never commit actual credentials to version control 

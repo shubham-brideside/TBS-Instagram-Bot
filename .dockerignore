@@ -1,0 +1,73 @@
+# Git files
+.git
+.gitignore
+README.md
+*.md
+
+# Python cache and virtual environments
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+.cache/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+.tox/
+
+# Environment and config files (remove .env from ignore for dev builds)
+# .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build and deployment artifacts
+*.zip
+app.zip
+dist/
+build/
+*.egg-info/
+
+# Azure and deployment files
+.azure/
+deploy/
+docs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Other exclusions
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log* 

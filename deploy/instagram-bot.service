@@ -1,0 +1,16 @@
+[Unit]
+Description=Instagram Bot Flask Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/path/to/your/app
+Environment=PATH=/path/to/your/app/.venv/bin
+Environment=ENVIRONMENT=production
+ExecStart=/path/to/your/app/.venv/bin/gunicorn --bind 127.0.0.1:5000 --workers 3 wsgi:app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 

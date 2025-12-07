@@ -1,0 +1,89 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests (optional)
+      run: |
+        # Add your test commands here if you have tests
+        echo "No tests configured"
+    
+    - name: Create deployment package
+      run: |
+        # Create a clean deployment package
+        mkdir deployment
+        cp -r . deployment/ || true
+        cd deployment
+        
+        # Remove unnecessary files
+        rm -rf .git .github __pycache__ .venv venv *.pyc
+        rm -f Dockerfile* .dockerignore
+        
+        # Create ZIP file
+        zip -r ../app.zip . -x "*.git*" "*__pycache__*" "*.pyc" "*.venv*" "*venv*"
+        cd ..
+    
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+    
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'brideside-lead-automation'
+        slot-name: 'production'
+        package: app.zip
+
+  # Optional: Docker deployment (only if you want to use containers)
+  docker-deploy:
+    runs-on: ubuntu-latest
+    if: false  # Disabled by default - set to true if you want to use Docker
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/instagram-bot:latest
+    
+    - name: Deploy to Azure Container Instances
+      uses: azure/aci-deploy@v1
+      with:
+        resource-group: brideside-lead-automation
+        dns-name-label: instagram-bot-${{ github.run_number }}
+        image: ${{ secrets.DOCKER_USERNAME }}/instagram-bot:latest
+        name: instagram-bot
+        location: 'Central US' 

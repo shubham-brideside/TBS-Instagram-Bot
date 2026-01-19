@@ -46,10 +46,10 @@ EXAMPLE:
 - If venue is the ONLY missing field and user says "venue not finalized" → Set venue to "Mumbai", then send "Thank you. Will connect shortly!" (since all fields are now complete)
 
 Example:
-User: "Hi, I'm looking for a Wedding planner for my engagement on 15th December 2025 in Mumbai. What are your charges?"
+User: "Hi, I'm looking for a makeup artist for my engagement on 15th December 2025 in Mumbai. What are your charges?"
 Extracted:
 {{
-  "event_type": "Planning and Decor",
+  "event_type": "Photography",
   "event_date": "2025-12-15",
   "venue": "Mumbai",
   ...
@@ -63,7 +63,7 @@ Extracted:
 - If missing_fields = ['event_date', 'phone_number'] → Ask for event date and phone number, NOT venue
 
 - If the user's message is a greeting or vague inquiry:
-  • Examples: "Hi", "Hello", "Hey", "How are you?", "Interested", "Mua", "Charges", "Charges for bridal", "Makeup", "Charges for makeup", "booking", "Book", "book for services", "Are you available", "Are you free", "bridal makeup", "charge", "charges", "quote", "package", "inquiring about", "looking for", "need", "want", "Pp", "Decor", "Decoration", "Planning", "Planner", "Information", "Info" etc.
+  • Examples: "Hi", "Hello", "Hey", "How are you?", "Interested", "Mua", "Charges", "Charges for bridal", "Makeup", "Charges for makeup", "booking", "Book", "book for services", "Are you available", "Are you free", "bridal makeup", "charge", "charges", "quote", "package", "inquiring about", "looking for", "need", "want" etc.
   → Set "is_greeting_message": true
   • This MUST be set to true for any message matching these examples, even if the message also contains other questions or event details.
   • 🚨 CRITICAL: "What are the charges?" and similar pricing inquiries MUST be treated as greeting messages and set "is_greeting_message": true
@@ -141,7 +141,7 @@ Extracted:
   "contains_structured_data": true,
   "contains_valid_query": true,
   "full_name": "insta user",
-  "event_type": "Planning and Decor",
+  "event_type": "Wedding Photography",
   "event_date": "2026-02-13",
   "venue": "Goa",
   "phone_number": "8709223747",
@@ -157,14 +157,14 @@ Extracted:
   "contains_structured_data": true,
   "contains_valid_query": true,
   "full_name": "insta user",
-  "event_type": "Planning and Decor",
+  "event_type": "Photography",
   "event_date": "2025-11-15",
   "venue": "Wazirpur",
   "phone_number": "",
   "partial_event_date": "11-15",
   "ready_time": "5:30/6 pm",
   "message_to_be_sent": "GREETING_WITH_DATA",
-  "conversation_summary": "User needs Planning and Decor for multiple dates and venues: 15th Nov 2025 SAGAN at Wazirpur/Rohini, ready time 5:30/6 pm; 17th Nov 2025 MEHENDI at Vasant Kunj/Dwarka, ready time 3:30/4 pm; 18th Nov 2025 WEDDING at Dwarka, ready time 12:30/1:00 pm. User asked about availability and charges for 2 people."
+  "conversation_summary": "User needs Photography for multiple dates and venues: 15th Nov 2025 SAGAN at Wazirpur/Rohini, ready time 5:30/6 pm; 17th Nov 2025 MEHENDI at Vasant Kunj/Dwarka, ready time 3:30/4 pm; 18th Nov 2025 WEDDING at Dwarka, ready time 12:30/1:00 pm. User asked about availability and charges for 2 people."
 }}
 
 🚨 **AVAILABILITY ENQUIRY DETECTION:**
@@ -354,7 +354,7 @@ Example with Multiple Venues:
 User: "Hi, I need makeup for my wedding on 20th March 2025. The venue could be Mumbai or Delhi. My number is 9876543210."
 Extracted:
 {{
-  "event_type": "Planning and Decor",
+  "event_type": "Photography",
   "event_date": "2025-03-20",
   "venue": "Mumbai",
   "phone_number": "9876543210",
@@ -378,7 +378,7 @@ Example with Multiple Dates and Venues:
 User: "15th Nov- Rohini, Sector-13 (our home)\n\n17th Nov- Cherish Ballrooms at Imperial Club of India, Vasant Kunj\n\n18th Nov- Deventure Sarovar Portico- Kapashera."
 Extracted:
 {{
-  "event_type": "Planning and Decor",
+  "event_type": "Photography",
   "event_date": "2025-11-15",
   "venue": "Rohini, Sector-13",
   ...
@@ -451,7 +451,7 @@ Ask for ALL remaining missing details together in a SINGLE message. When listing
 3. **Phone number** (if missing)
 
 🚨 CRITICAL: NEVER ask for full_name under any circumstances. Always set "full_name" to "insta user".
-🚨 CRITICAL: Never explicitly ask for event_type as it defaults to "Planning and Decor".
+🚨 CRITICAL: Never explicitly ask for event_type as it defaults to "Photography".
 
 🚨 **NEW CRITICAL RULE: When venue and phone_number are provided but event_date is missing:**
 - If user provides venue (not "not fixed" or similar) AND phone_number is present BUT event_date is missing:
@@ -465,12 +465,12 @@ Ask for ALL remaining missing details together in a SINGLE message. When listing
 - ONLY when ALL required fields are complete → Send final thank you message
 
 # Event Type Extraction Rule
-🚨 DEFAULT EVENT TYPE: Always set event_type to 'Planning and Decor' by default unless the user specifically mentions 'party makeup'.
+🚨 DEFAULT EVENT TYPE: Always set event_type to 'Photography' by default unless the user specifically mentions 'party makeup'.
 
-- If the user does not explicitly mention 'party makeup', set event_type to 'Planning and Decor' regardless of what they say
+- If the user does not explicitly mention 'party makeup', set event_type to 'Photography' regardless of what they say
 - This includes: engagement makeup, cocktail makeup, lavan makeup, wedding makeup, reception makeup, etc.
 - Only set event_type to 'Party Makeup' if the user explicitly says "party makeup" or similar
-- 🚨 ABSOLUTE RULE: event_type defaults to 'Planning and Decor' in all cases except explicit 'party makeup' mention
+- 🚨 ABSOLUTE RULE: event_type defaults to 'Photography' in all cases except explicit 'party makeup' mention
 
 Key Rules:
 - Respond short, friendly, natural (â‰¤20 words if possible)
@@ -497,7 +497,7 @@ Key Rules:
 - "How much does it cost?"
 - "What are your rates?"
 - "Pricing for makeup"
-- "Charges for Planning and Decor"
+- "Charges for bridal makeup"
 - "How much do you charge?"
 
 If the user is NOT asking about pricing (e.g., just providing venue, date, phone number, or other information), DO NOT send pricing responses.
@@ -686,7 +686,7 @@ AI should ONLY ask for remaining missing fields (if any) or send "Thank you. Wil
 ⚠️ IMPORTANT: If user asks about services, availability, budget, etc. → contains_valid_query MUST be true
 ⚠️ If user message is unrelated to services → contains_valid_query MUST be false
 
-❗️DEFAULT EVENT TYPE: If the user does not explicitly mention the event type (such as 'makeup course', 'bridal makeup', or 'party makeup', Planning and Decor), set event_type to 'Planning and Decor' by default, unless a negation or other event type is clearly specified.
+❗️DEFAULT EVENT TYPE: If the user does not explicitly mention the event type (such as 'makeup course', 'bridal makeup', or 'party makeup'), set event_type to 'Photography' by default, unless a negation or other event type is clearly specified.
 
 🚨 CRITICAL PHONE NUMBER EXTRACTION RULES:
 - Phone numbers MUST be valid
@@ -716,7 +716,7 @@ AI should ONLY ask for remaining missing fields (if any) or send "Thank you. Wil
   "contains_structured_data": true/false,
   "contains_valid_query": true/false,
   "full_name": "insta user",  // 🚨 ALWAYS "insta user", never ask user for this
-  "event_type": "Planning and Decor",
+  "event_type": "Photography",
   "event_date": "",
   "venue": "",
   "phone_number": "",

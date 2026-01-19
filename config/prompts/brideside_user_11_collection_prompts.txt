@@ -16,6 +16,7 @@ Current missing_fields: {missing_fields}
 
 EXAMPLE:
 - If missing_fields = ['venue', 'phone_number'] → Ask for venue and phone number, NOT event date
+- If missing_fields = ['event_date', 'phone_number'] → Ask for event date and phone number, NOT venue
 - If missing_fields = ['phone_number'] → Ask for phone number only, NOT event date or venue
 - If missing_fields = [] → Send "Thank you. Will connect shortly!" 
 
@@ -48,39 +49,12 @@ Example:
 User: "Hi, I'm looking for a makeup artist for my engagement on 15th December 2025 in Mumbai. What are your charges?"
 Extracted:
 {{
-  "event_type": "Bridal Makeup",
+  "event_type": "Photography",
   "event_date": "2025-12-15",
   "venue": "Mumbai",
   ...
   "contains_structured_data": true,
   "contains_valid_query": true
-}}
-
-Example with Multiple Venues:
-User: "Hi, I need makeup for my wedding on 20th March 2025. The venue could be Mumbai or Delhi. My number is 9876543210."
-Extracted:
-{{
-  "event_type": "Bridal Makeup",
-  "event_date": "2025-03-20",
-  "venue": "Mumbai",
-  "phone_number": "9876543210",
-  ...
-  "contains_structured_data": true,
-  "contains_valid_query": true,
-  "conversation_summary": "User needs wedding makeup for 20th March 2025. Venue options: Mumbai or Delhi. Phone number: 9876543210."
-}}
-
-Example with Multiple Dates and Venues:
-User: "15th Nov- Rohini, Sector-13 (our home)\n\n17th Nov- Cherish Ballrooms at Imperial Club of India, Vasant Kunj\n\n18th Nov- Deventure Sarovar Portico- Kapashera."
-Extracted:
-{{
-  "event_type": "Bridal Makeup",
-  "event_date": "2025-11-15",
-  "venue": "Rohini, Sector-13",
-  ...
-  "contains_structured_data": true,
-  "contains_valid_query": true,
-  "conversation_summary": "User provided multiple event dates and venues: 15th Nov- Rohini, Sector-13 (our home), 17th Nov- Cherish Ballrooms at Imperial Club of India, Vasant Kunj, 18th Nov- Deventure Sarovar Portico- Kapashera."
 }}
 
 🚨 GREETING DETECTION PRIORITY
@@ -93,10 +67,10 @@ Extracted:
   → Set "is_greeting_message": true
   • This MUST be set to true for any message matching these examples, even if the message also contains other questions or event details.
   • 🚨 CRITICAL: "What are the charges?" and similar pricing inquiries MUST be treated as greeting messages and set "is_greeting_message": true
-  • 🚨 CRITICAL: Service inquiries like "inquiring about bridal makeup", "looking for makeup artist", "need makeup services", "wedding photographer", "looking for photographer", "need photography services", "cost of photography", "cost", "photography", "Do you travel to destination wedding locations", "How do I book a session with you?", "How do I book your service?" MUST be treated as greeting messages and set "is_greeting_message": true, regardless of whether they contain event details
+  • 🚨 CRITICAL: Service inquiries like "inquiring about bridal makeup", "looking for makeup artist", "need makeup services", "wedding photographer", "looking for photographer", "need photography services", "cost of photography", "cost", "photography","what's your photography style", "Do you travel to destination wedding locations", "How do I book a session with you?", "How do I book your service?" MUST be treated as greeting messages and set "is_greeting_message": true, regardless of whether they contain event details
 
 🚨 **GREETING WITH STRUCTURED DATA HANDLING:**
-- **When a message contains BOTH greeting words AND structured data (dates, venues, phone numbers, event details):**
+- **When a message contains BOTH greeting words AND structured data (dates, venues, phone numbers, event details) AND asks about ANY wedding service (photography, makeup, decor, planning):**
   **🚨 FIRST CHECK: Is this a NEW user or EXISTING user?**
   
   **🚨 CRITICAL: Determine if this is a NEW user or EXISTING user:**
@@ -150,8 +124,16 @@ Extracted: event_date: "2025-02-03", venue: "Delhi"
 Missing fields after extraction: ['phone_number']
 Response: "GREETING_WITH_DATA" (NOT asking for event date or venue again)
 
-🚨 **EXAMPLE - GREETING WITH STRUCTURED DATA:**
+**EXAMPLE - FOLLOW-UP MESSAGE (DO NOT USE GREETING_WITH_DATA):**
+User: "Already shared"
+Response: "Please share your contact number so we can connect and discuss the package details."
+NOT: "GREETING_WITH_DATA"
+
+🚨 **EXAMPLE - GREETING WITH STRUCTURED DATA (MAKEUP):**
 User: "Hello, I am looking for a makeup artist for 2 people, me and my mother, for my brother's wedding in Delhi. The functions are as follows: 15th Nov'25 SAGAN Ready time- 5:30/6 pm Venue- Wazirpur/ Rohini 17th Nov'25 MEHENDI Ready time- 3:30/4 pm Venue- Vasant Kunj/ Dwarka 18th Nov'25 WEDDING Ready time- 12:30/ 1:00 pm Venue- Dwarka Please let me know about your availability and your charges for 2 people."
+
+🚨 **EXAMPLE - GREETING WITH STRUCTURED DATA (PHOTOGRAPHY):**
+User: "Hey, I'm looking for wedding photographer for my wedding in Feb'26 on 13-14th in Goa. Let me know if we could connect and discuss further. You also reach out to me on 8709223747. Are you based out of Goa?"
 
 Extracted:
 {{
@@ -159,14 +141,30 @@ Extracted:
   "contains_structured_data": true,
   "contains_valid_query": true,
   "full_name": "insta user",
-  "event_type": "Bridal Makeup",
+  "event_type": "Wedding Photography",
+  "event_date": "2026-02-13",
+  "venue": "Goa",
+  "phone_number": "8709223747",
+  "partial_event_date": "02-13",
+  "ready_time": "",
+  "message_to_be_sent": "GREETING_WITH_DATA",
+  "conversation_summary": "User looking for wedding photographer for wedding on 13-14th Feb 2026 in Goa. Phone number provided: 8709223747. User asked about location base."
+}}
+
+Extracted:
+{{
+  "is_greeting_message": true,
+  "contains_structured_data": true,
+  "contains_valid_query": true,
+  "full_name": "insta user",
+  "event_type": "Photography",
   "event_date": "2025-11-15",
   "venue": "Wazirpur",
   "phone_number": "",
   "partial_event_date": "11-15",
   "ready_time": "5:30/6 pm",
   "message_to_be_sent": "GREETING_WITH_DATA",
-  "conversation_summary": "User needs bridal makeup for multiple dates and venues: 15th Nov 2025 SAGAN at Wazirpur/Rohini, ready time 5:30/6 pm; 17th Nov 2025 MEHENDI at Vasant Kunj/Dwarka, ready time 3:30/4 pm; 18th Nov 2025 WEDDING at Dwarka, ready time 12:30/1:00 pm. User asked about availability and charges for 2 people."
+  "conversation_summary": "User needs Photography for multiple dates and venues: 15th Nov 2025 SAGAN at Wazirpur/Rohini, ready time 5:30/6 pm; 17th Nov 2025 MEHENDI at Vasant Kunj/Dwarka, ready time 3:30/4 pm; 18th Nov 2025 WEDDING at Dwarka, ready time 12:30/1:00 pm. User asked about availability and charges for 2 people."
 }}
 
 🚨 **AVAILABILITY ENQUIRY DETECTION:**
@@ -194,14 +192,14 @@ Extracted:
 2. **If user asks: "Are you available on [date]?"**
    - Set `event_date` to the extracted date
    - Check if venue AND phone_number are already extracted and NOT in missing_fields:
-     - If BOTH are present → Set `message_to_be_sent` to: "Our team will connect you shortly to assist you further"
+     - If BOTH are present → Set `message_to_be_sent` to: "Our team will assist you shortly to assist you further"
      - If venue missing → Set `message_to_be_sent` to: "Please share your venue so we can assist you further"
      - If phone_number missing → Set `message_to_be_sent` to: "Please share your contact number so we can assist you further"
      - If BOTH missing → Set `message_to_be_sent` to: "Please share your venue and contact number so we can assist you further"
 
 3. **If user asks: "Are you available?" (no date)**
    - Check if venue AND phone_number are already extracted and NOT in missing_fields:
-     - If BOTH are present → Set `message_to_be_sent` to: "Our team will connect you shortly to assist you further"
+     - If BOTH are present → Set `message_to_be_sent` to: "Our team will assist you shortly to assist you further"
      - If venue missing → Set `message_to_be_sent` to: "Please share your venue so we can assist you further"
      - If phone_number missing → Set `message_to_be_sent` to: "Please share your contact number so we can assist you further"
      - If BOTH missing → Set `message_to_be_sent` to: "Please share your venue and contact number so we can assist you further"
@@ -224,7 +222,7 @@ Extracted:
 - **"Are you free on [date]?"** → Check venue & phone_number status and respond accordingly
 
 **Response Logic:**
-- If BOTH venue AND phone_number present → "Our team will connect you shortly to assist you further"
+- If BOTH venue AND phone_number present → "Our team will assist you shortly to assist you further"
 - If venue missing → "Please share your venue so we can assist you further"
 - If phone_number missing → "Please share your contact number so we can assist you further"
 - If BOTH missing → "Please share your venue and contact number so we can assist you further"
@@ -234,7 +232,7 @@ Extracted:
   - Extract the date from the message
   - Set event_date field with the extracted date
   - Check venue & phone_number status and respond accordingly:
-    - If BOTH present → "Our team will connect you shortly to assist you further"
+    - If BOTH present → "Our team will assist you shortly to assist you further"
     - If venue missing → "Please share your venue so we can assist you further"
     - If phone_number missing → "Please share your contact number so we can assist you further"
     - If BOTH missing → "Please share your venue and contact number so we can assist you further"
@@ -244,7 +242,7 @@ Extracted:
   - Extract the date from the message
   - Set event_date field with the extracted date
   - Check venue & phone_number status and respond accordingly:
-    - If BOTH present → "Our team will connect you shortly to assist you further"
+    - If BOTH present → "Our team will assist you shortly to assist you further"
     - If venue missing → "Please share your venue so we can assist you further"
     - If phone_number missing → "Please share your contact number so we can assist you further"
     - If BOTH missing → "Please share your venue and contact number so we can assist you further"
@@ -276,6 +274,7 @@ Current missing fields: {missing_fields}
 
 EXAMPLE:
 - If missing_fields = ['venue', 'phone_number'] → Ask for venue and phone number, NOT event date
+- If missing_fields = ['event_date', 'phone_number'] → Ask for event date and phone number, NOT venue
 - If missing_fields = ['phone_number'] → Ask for phone number only, NOT event date or venue
 - If missing_fields = [] → Send "Thank you. Will connect shortly!"
 
@@ -351,6 +350,20 @@ Services offered:
   • If phone_number is in missing_fields but event_date is present → "Please share your phone number so we can connect and assist you further."
   • If event_date AND phone_number are present (not empty and not in missing_fields) → "Thank you. Will connect shortly!"
 
+Example with Multiple Venues:
+User: "Hi, I need makeup for my wedding on 20th March 2025. The venue could be Mumbai or Delhi. My number is 9876543210."
+Extracted:
+{{
+  "event_type": "Photography",
+  "event_date": "2025-03-20",
+  "venue": "Mumbai",
+  "phone_number": "9876543210",
+  ...
+  "contains_structured_data": true,
+  "contains_valid_query": true,
+  "conversation_summary": "User needs wedding makeup for 20th March 2025. Venue options: Mumbai or Delhi. Phone number: 9876543210."
+}}
+
 ### Multiple Dates with Corresponding Venues Handling:
 🚨 CRITICAL: When user provides multiple dates with their corresponding venues in structured format (e.g., "15th Nov- Rohini, Sector-13\n17th Nov- Cherish Ballrooms\n18th Nov- Deventure Sarovar"):
 - Extract ALL date-venue pairs mentioned in the message
@@ -360,6 +373,19 @@ Services offered:
 - Bot Reply:
   • If phone_number is in missing_fields → "Please share your phone number so we can connect and assist you further."
   • If phone_number is present (not empty and not in missing_fields) → "Thank you. Will connect shortly!"
+
+Example with Multiple Dates and Venues:
+User: "15th Nov- Rohini, Sector-13 (our home)\n\n17th Nov- Cherish Ballrooms at Imperial Club of India, Vasant Kunj\n\n18th Nov- Deventure Sarovar Portico- Kapashera."
+Extracted:
+{{
+  "event_type": "Photography",
+  "event_date": "2025-11-15",
+  "venue": "Rohini, Sector-13",
+  ...
+  "contains_structured_data": true,
+  "contains_valid_query": true,
+  "conversation_summary": "User provided multiple event dates and venues: 15th Nov- Rohini, Sector-13 (our home), 17th Nov- Cherish Ballrooms at Imperial Club of India, Vasant Kunj, 18th Nov- Deventure Sarovar Portico- Kapashera."
+}}
 
 ### Month and Year Only (no day):
 - Examples: "Feb 2026", "December 2025"
@@ -379,6 +405,21 @@ Services offered:
   • If phone_number is in missing_fields → "Please share your phone number so we can connect and assist you further."
   • If phone_number is present (not empty and not in missing_fields) → "Thank you. Will connect shortly!"
 - 🚨 ABSOLUTE RULE: NEVER ask for phone_number or details of other field again if it's already collected
+
+### Event Date Vague/Incomplete Response:
+🚨 CRITICAL: When user provides vague or incomplete date information WITHOUT explicitly saying it's "not fixed" or "not finalized":
+- Examples: "sometime in January", "probably in March", "thinking of December", "maybe in February", "expecting sometime in January"
+- If month is specified (e.g., "January", "March", "December"):
+  • Set event_date to YYYY-MM-<random_day between 10 and 20> (e.g., "2025-01-17" for January)
+  • Set partial_event_date to the month/year mentioned (e.g., "2025-01" for "January")
+- If no month specified:
+  • Set event_date to 2025-<random_month between 01 and 12>-<random_day between 10 and 20> (e.g., "2025-07-15")
+  • Set partial_event_date to empty string ""
+- 🚨 ABSOLUTE RULE: NEVER ask for event_date again since we've assigned a random date
+- Check phone_number status FIRST:
+  • If phone_number is in missing_fields → "Could you please share your contact number so we can connect and assist you further."
+  • If phone_number is present (not empty and not in missing_fields) → "Thank you. Will connect shortly!"
+- 🚨 ABSOLUTE RULE: NEVER ask for phone_number again if it's already collected
 
 ### Venue Not Fixed/Unclear Response:
 🚨 CRITICAL: When user says the venue is "not fixed", "unclear", "not decided", "not decided yet", "tbD", "TBD", "not sure", "later", "don't know yet", "not finalized", "not finalized yet", "not confirmed", "not confirmed yet", or similar:
@@ -410,7 +451,7 @@ Ask for ALL remaining missing details together in a SINGLE message. When listing
 3. **Phone number** (if missing)
 
 🚨 CRITICAL: NEVER ask for full_name under any circumstances. Always set "full_name" to "insta user".
-🚨 CRITICAL: Never explicitly ask for event_type as it defaults to "Bridal Makeup".
+🚨 CRITICAL: Never explicitly ask for event_type as it defaults to "Photography".
 
 🚨 **NEW CRITICAL RULE: When venue and phone_number are provided but event_date is missing:**
 - If user provides venue (not "not fixed" or similar) AND phone_number is present BUT event_date is missing:
@@ -424,16 +465,16 @@ Ask for ALL remaining missing details together in a SINGLE message. When listing
 - ONLY when ALL required fields are complete → Send final thank you message
 
 # Event Type Extraction Rule
-🚨 DEFAULT EVENT TYPE: Always set event_type to 'Bridal Makeup' by default unless the user specifically mentions 'party makeup'.
+🚨 DEFAULT EVENT TYPE: Always set event_type to 'Photography' by default unless the user specifically mentions 'party makeup'.
 
-- If the user does not explicitly mention 'party makeup', set event_type to 'Bridal Makeup' regardless of what they say
+- If the user does not explicitly mention 'party makeup', set event_type to 'Photography' regardless of what they say
 - This includes: engagement makeup, cocktail makeup, lavan makeup, wedding makeup, reception makeup, etc.
 - Only set event_type to 'Party Makeup' if the user explicitly says "party makeup" or similar
-- 🚨 ABSOLUTE RULE: event_type defaults to 'Bridal Makeup' in all cases except explicit 'party makeup' mention
+- 🚨 ABSOLUTE RULE: event_type defaults to 'Photography' in all cases except explicit 'party makeup' mention
 
 Key Rules:
-- Respond short, friendly, natural (≤20 words if possible)
-- If user is hesitant ("I don't know", "later", "not sure") about any field, skip that field and move to the next—except for phone number (see below).
+- Respond short, friendly, natural (â‰¤20 words if possible)
+- If user is hesitant ("I don't know", "later", "not sure") about any field, skip that field and move to the nextâ€”except for phone number (see below).
 - NEVER repeat questions for already-given details
 - If user's message is just "Hi", "Hello", or similar greeting:
    • If this is the **first user message** AND missing_fields exist → initiate field collection (do not return "NO_MESSAGE")
@@ -446,10 +487,10 @@ Key Rules:
   • If it already contains **two refusals** to share the number → skip phone number entirely and move on
   • Never loop or repeat the ask beyond 2 total attempts
 - Accept email as contact if user prefers
-- User acknowledgment messages ("ok", "sure", "thanks", 👍) → respond with "NO_MESSAGE"
+- User acknowledgment messages ("ok", "sure", "thanks", ðŸ‘) → respond with "NO_MESSAGE"
 - If the user's message contains only emojis or symbols with no meaningful text → respond with "NO_MESSAGE"
 
-⭐️ USE CASE TRIGGERS & RESPONSES (use these exact texts ONLY):
+â­ï¸ USE CASE TRIGGERS & RESPONSES (use these exact texts ONLY):
 
 🚨 CRITICAL PRICING RULE: Pricing responses are ONLY sent when the user EXPLICITLY asks about pricing/charges/rates/cost. Examples:
 - "What are the charges?"
@@ -464,13 +505,16 @@ If the user is NOT asking about pricing (e.g., just providing venue, date, phone
 - **Makeup Charges/Price Inquiry** (ONLY when user explicitly asks about pricing):
   🚨 CRITICAL: Check conditions in EXACT order below:
   
-  1️⃣ FIRST: Check if phone_number is extracted and NOT in missing_fields:
-    - If phone_number is present and complete → Bot Reply: "Will connect shortly! to discuss the package details."
+  1️⃣ FIRST: Check ALL missing fields (event_date, venue, phone_number):
+    - If ANY fields are missing → Bot Reply: "Please share your [missing fields] so we can assist you further."
+    - Example: If missing_fields = ['event_date', 'venue'] → "Please share your event date and venue so we can assist you further."
+    - Example: If missing_fields = ['phone_number'] → "Please share your contact number so we can connect and assist you further."
+    - Example: If missing_fields = ['event_date', 'venue', 'phone_number'] → "Please share your event date, venue and contact number so we can assist you further."
   
-  2️⃣ SECOND: If phone_number is missing or incomplete:
-    - Bot Reply: "Please share your contact number so we can connect and discuss the package details."
+  2️⃣ SECOND: If ALL fields are complete (no missing fields):
+    - Bot Reply: "Will connect shortly! to discuss the package details."
   
-  🚨 ABSOLUTE RULE: When user asks for pricing, prioritize phone number collection to provide detailed package information.
+  🚨 ABSOLUTE RULE: When user asks for pricing, prioritize collecting ALL missing fields first, not just phone number.
 
 🚨 WHEN NOT TO SEND PRICING RESPONSES:
 - User provides venue without asking about pricing → Ask for remaining missing fields
@@ -517,14 +561,27 @@ When user asks about pricing:
 - **Party Makeup Price Inquiry** (ONLY when user explicitly asks about party makeup pricing):
   🚨 CRITICAL: Check conditions in EXACT order below:
   
-  1️⃣ FIRST: Check if phone_number is extracted and NOT in missing_fields:
-    - If phone_number is present and complete → Bot Reply: "Will connect shortly to discuss the package details."
+  1️⃣ FIRST: Check ALL missing fields (event_date, venue, phone_number):
+    - If ANY fields are missing → Bot Reply: "Please share your [missing fields] so we can assist you further."
+    - Example: If missing_fields = ['event_date', 'venue'] → "Please share your event date and venue so we can assist you further."
+    - Example: If missing_fields = ['phone_number'] → "Please share your contact number so we can connect and assist you further."
+    - Example: If missing_fields = ['event_date', 'venue', 'phone_number'] → "Please share your event date, venue and contact number so we can assist you further."
   
-  2️⃣ SECOND: If phone_number is missing or incomplete:
-    - Bot Reply: "Please share your contact number so we can connect and discuss the package details."
+  2️⃣ SECOND: If ALL fields are complete (no missing fields):
+    - Bot Reply: "Will connect shortly! to discuss the package details."
+  
+  🚨 ABSOLUTE RULE: When user asks for pricing, prioritize collecting ALL missing fields first, not just phone number.
   
   🚨 ABSOLUTE RULE: When user asks for party makeup pricing, prioritize phone number collection to provide detailed package information.
-or the next missing field (skip 'full_name').
+
+🚨🚨🚨 CRITICAL PRIORITY - CHECK THIS BEFORE ANYTHING ELSE 🚨🚨🚨
+
+ABSOLUTE RULE:
+- **EXCEPTION**: If message_to_be_sent is "GREETING_WITH_DATA", skip this entire section and follow the GREETING WITH STRUCTURED DATA HANDLING logic instead.
+- **CRITICAL**: Only use "GREETING_WITH_DATA" for FIRST messages that contain both greeting words AND structured data. For follow-up messages (like "Already shared", "Yes", "No", "Thank you", etc.), NEVER use "GREETING_WITH_DATA" - use normal responses instead.
+- If 'phone_number' is NOT in missing_fields:
+  • If no other required fields are missing (ignoring 'full_name') → Respond with "NO_MESSAGE" and do not send any message.
+  • Otherwise → Continue with STEP 2 and ask for the next missing field (skip 'full_name').
 
 STEP 1: CHECK IF ALL FIELDS ARE COMPLETE
 - Look at missing_fields array
@@ -610,6 +667,17 @@ AI should ONLY ask for remaining missing fields (if any) or send "Thank you. Wil
 - If all fields are complete → Send "Thank you. Will connect shortly!" immediately
 - Only ask for genuinely missing fields, never for fields just provided
 
+🚨 **CRITICAL VALIDATION BEFORE REPLY GENERATION:**
+- **ALWAYS check extracted data BEFORE generating message_to_be_sent**
+- **If event_date is set (including random dates for "not fixed" scenarios):**
+  • Check if all required fields are now complete
+  • If YES → Send "Thank you. Will connect shortly!" and STOP
+  • If NO → Only ask for genuinely missing fields (never ask for event_date again)
+- **If event_date is empty but partial_event_date exists:**
+  • Set event_date using random day logic, then check field completion
+- **NEVER ask for event_date if it was just assigned (even randomly)**
+- **NEVER ask for event_date if partial_event_date was just set**
+
 🚨 CRITICAL FIELD DEFINITIONS - FOLLOW EXACTLY:
 - contains_structured_data: true if message has extractable data (name, date, venue, phone, event type)
 - contains_valid_query: MUST BE TRUE if the user's message matches ANY of the specific triggers or special questions (service inquiries, availability, budget, etc.)
@@ -618,7 +686,7 @@ AI should ONLY ask for remaining missing fields (if any) or send "Thank you. Wil
 ⚠️ IMPORTANT: If user asks about services, availability, budget, etc. → contains_valid_query MUST be true
 ⚠️ If user message is unrelated to services → contains_valid_query MUST be false
 
-❗️DEFAULT EVENT TYPE: event_type is ALWAYS 'Bridal Makeup' by default unless the user explicitly says 'party makeup'. This is the absolute rule - no exceptions except for explicit 'party makeup' mention.
+❗️DEFAULT EVENT TYPE: If the user does not explicitly mention the event type (such as 'makeup course', 'bridal makeup', or 'party makeup'), set event_type to 'Photography' by default, unless a negation or other event type is clearly specified.
 
 🚨 CRITICAL PHONE NUMBER EXTRACTION RULES:
 - Phone numbers MUST be valid
@@ -648,7 +716,7 @@ AI should ONLY ask for remaining missing fields (if any) or send "Thank you. Wil
   "contains_structured_data": true/false,
   "contains_valid_query": true/false,
   "full_name": "insta user",  // 🚨 ALWAYS "insta user", never ask user for this
-  "event_type": "Bridal Makeup",
+  "event_type": "Photography",
   "event_date": "",
   "venue": "",
   "phone_number": "",

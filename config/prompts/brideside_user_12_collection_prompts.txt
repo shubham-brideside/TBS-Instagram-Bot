@@ -16,7 +16,6 @@ Current missing_fields: {missing_fields}
 
 EXAMPLE:
 - If missing_fields = ['venue', 'phone_number'] → Ask for venue and phone number, NOT event date
-- If missing_fields = ['event_date', 'phone_number'] → Ask for event date and phone number, NOT venue
 - If missing_fields = ['phone_number'] → Ask for phone number only, NOT event date or venue
 - If missing_fields = [] → Send "Thank you. Will connect shortly!" 
 
@@ -195,14 +194,14 @@ Extracted:
 2. **If user asks: "Are you available on [date]?"**
    - Set `event_date` to the extracted date
    - Check if venue AND phone_number are already extracted and NOT in missing_fields:
-     - If BOTH are present → Set `message_to_be_sent` to: "Our team will assist you shortly to assist you further"
+     - If BOTH are present → Set `message_to_be_sent` to: "Our team will connect you shortly to assist you further"
      - If venue missing → Set `message_to_be_sent` to: "Please share your venue so we can assist you further"
      - If phone_number missing → Set `message_to_be_sent` to: "Please share your contact number so we can assist you further"
      - If BOTH missing → Set `message_to_be_sent` to: "Please share your venue and contact number so we can assist you further"
 
 3. **If user asks: "Are you available?" (no date)**
    - Check if venue AND phone_number are already extracted and NOT in missing_fields:
-     - If BOTH are present → Set `message_to_be_sent` to: "Our team will assist you shortly to assist you further"
+     - If BOTH are present → Set `message_to_be_sent` to: "Our team will connect you shortly to assist you further"
      - If venue missing → Set `message_to_be_sent` to: "Please share your venue so we can assist you further"
      - If phone_number missing → Set `message_to_be_sent` to: "Please share your contact number so we can assist you further"
      - If BOTH missing → Set `message_to_be_sent` to: "Please share your venue and contact number so we can assist you further"
@@ -225,7 +224,7 @@ Extracted:
 - **"Are you free on [date]?"** → Check venue & phone_number status and respond accordingly
 
 **Response Logic:**
-- If BOTH venue AND phone_number present → "Our team will assist you shortly to assist you further"
+- If BOTH venue AND phone_number present → "Our team will connect you shortly to assist you further"
 - If venue missing → "Please share your venue so we can assist you further"
 - If phone_number missing → "Please share your contact number so we can assist you further"
 - If BOTH missing → "Please share your venue and contact number so we can assist you further"
@@ -235,7 +234,7 @@ Extracted:
   - Extract the date from the message
   - Set event_date field with the extracted date
   - Check venue & phone_number status and respond accordingly:
-    - If BOTH present → "Our team will assist you shortly to assist you further"
+    - If BOTH present → "Our team will connect you shortly to assist you further"
     - If venue missing → "Please share your venue so we can assist you further"
     - If phone_number missing → "Please share your contact number so we can assist you further"
     - If BOTH missing → "Please share your venue and contact number so we can assist you further"
@@ -245,7 +244,7 @@ Extracted:
   - Extract the date from the message
   - Set event_date field with the extracted date
   - Check venue & phone_number status and respond accordingly:
-    - If BOTH present → "Our team will assist you shortly to assist you further"
+    - If BOTH present → "Our team will connect you shortly to assist you further"
     - If venue missing → "Please share your venue so we can assist you further"
     - If phone_number missing → "Please share your contact number so we can assist you further"
     - If BOTH missing → "Please share your venue and contact number so we can assist you further"
@@ -277,7 +276,6 @@ Current missing fields: {missing_fields}
 
 EXAMPLE:
 - If missing_fields = ['venue', 'phone_number'] → Ask for venue and phone number, NOT event date
-- If missing_fields = ['event_date', 'phone_number'] → Ask for event date and phone number, NOT venue
 - If missing_fields = ['phone_number'] → Ask for phone number only, NOT event date or venue
 - If missing_fields = [] → Send "Thank you. Will connect shortly!"
 
@@ -466,16 +464,13 @@ If the user is NOT asking about pricing (e.g., just providing venue, date, phone
 - **Makeup Charges/Price Inquiry** (ONLY when user explicitly asks about pricing):
   🚨 CRITICAL: Check conditions in EXACT order below:
   
-  1️⃣ FIRST: Check ALL missing fields (event_date, venue, phone_number):
-    - If ANY fields are missing → Bot Reply: "Please share your [missing fields] so we can assist you further."
-    - Example: If missing_fields = ['event_date', 'venue'] → "Please share your event date and venue so we can assist you further."
-    - Example: If missing_fields = ['phone_number'] → "Please share your contact number so we can connect and assist you further."
-    - Example: If missing_fields = ['event_date', 'venue', 'phone_number'] → "Please share your event date, venue and contact number so we can assist you further."
+  1️⃣ FIRST: Check if phone_number is extracted and NOT in missing_fields:
+    - If phone_number is present and complete → Bot Reply: "Will connect shortly! to discuss the package details."
   
-  2️⃣ SECOND: If ALL fields are complete (no missing fields):
-    - Bot Reply: "Will connect shortly! to discuss the package details."
+  2️⃣ SECOND: If phone_number is missing or incomplete:
+    - Bot Reply: "Please share your contact number so we can connect and discuss the package details."
   
-  🚨 ABSOLUTE RULE: When user asks for pricing, prioritize collecting ALL missing fields first, not just phone number.
+  🚨 ABSOLUTE RULE: When user asks for pricing, prioritize phone number collection to provide detailed package information.
 
 🚨 WHEN NOT TO SEND PRICING RESPONSES:
 - User provides venue without asking about pricing → Ask for remaining missing fields
@@ -522,16 +517,11 @@ When user asks about pricing:
 - **Party Makeup Price Inquiry** (ONLY when user explicitly asks about party makeup pricing):
   🚨 CRITICAL: Check conditions in EXACT order below:
   
-  1️⃣ FIRST: Check ALL missing fields (event_date, venue, phone_number):
-    - If ANY fields are missing → Bot Reply: "Please share your [missing fields] so we can assist you further."
-    - Example: If missing_fields = ['event_date', 'venue'] → "Please share your event date and venue so we can assist you further."
-    - Example: If missing_fields = ['phone_number'] → "Please share your contact number so we can connect and assist you further."
-    - Example: If missing_fields = ['event_date', 'venue', 'phone_number'] → "Please share your event date, venue and contact number so we can assist you further."
+  1️⃣ FIRST: Check if phone_number is extracted and NOT in missing_fields:
+    - If phone_number is present and complete → Bot Reply: "Will connect shortly to discuss the package details."
   
-  2️⃣ SECOND: If ALL fields are complete (no missing fields):
-    - Bot Reply: "Will connect shortly! to discuss the package details."
-  
-  🚨 ABSOLUTE RULE: When user asks for pricing, prioritize collecting ALL missing fields first, not just phone number.
+  2️⃣ SECOND: If phone_number is missing or incomplete:
+    - Bot Reply: "Please share your contact number so we can connect and discuss the package details."
   
   🚨 ABSOLUTE RULE: When user asks for party makeup pricing, prioritize phone number collection to provide detailed package information.
 or the next missing field (skip 'full_name').

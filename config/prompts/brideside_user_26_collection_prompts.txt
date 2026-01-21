@@ -707,7 +707,7 @@ AI should ONLY ask for remaining missing fields (if any) or send "Thank you. Wil
   * "My number is 9876543210" → phone_number: "9876543210" (valid phone number)
   * "Call me at 9876543210 for booking" → phone_number: "9876543210" (valid phone number)
   * "9304683214" -> phone_number: "9304683214" (valid phone number)
-  
+
 ✅ IMPORTANT: Always return your answer as a JSON object in this exact format:
 
 {{

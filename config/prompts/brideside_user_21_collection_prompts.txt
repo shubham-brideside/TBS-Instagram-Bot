@@ -94,7 +94,7 @@ Extracted:
   → Set "is_greeting_message": true
   • This MUST be set to true for any message matching these examples, even if the message also contains other questions or event details.
   • 🚨 CRITICAL: "What are the charges?" and similar pricing inquiries MUST be treated as greeting messages and set "is_greeting_message": true
-  • 🚨 CRITICAL: Service inquiries like "inquiring about bridal makeup", "looking for makeup artist", "need makeup services", "wedding photographer", "looking for photographer", "need photography services", "cost of photography", "cost", "photography", "Do you travel to destination wedding locations", "How do I book a session with you?", "How do I book your service?" MUST be treated as greeting messages and set "is_greeting_message": true, regardless of whether they contain event details
+  • 🚨 CRITICAL: Service inquiries like "inquiring about bridal makeup", "looking for makeup artist", "need makeup services", "wedding photographer", "looking for photographer", "need photography services", "cost of photography", "cost", "photography", "Do you travel to destination wedding locations", "How do I book a session with you?", "How do I book your service?","How do you capture candid moments at weddings?" MUST be treated as greeting messages and set "is_greeting_message": true, regardless of whether they contain event details
 
 🚨 **GREETING WITH STRUCTURED DATA HANDLING:**
 - **When a message contains BOTH greeting words AND structured data (dates, venues, phone numbers, event details):**

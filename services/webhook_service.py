@@ -1178,7 +1178,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     owner_id=owner_id,
                     category_id=category_id,
                     lead_date=today,
-                    person_source="Direct",
+                    person_source="DIRECT",
                     sub_source="Instagram"
                 )
                 
@@ -1225,7 +1225,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     category_id=category_id,
                     value=0.0,
                     status="IN_PROGRESS",
-                    source="Direct",
+                    source="DIRECT",
                     sub_source="Instagram",
                     contact_number=""  # Required field, will be updated later
                 )
@@ -1679,7 +1679,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 owner_id=owner_id,
                 category_id=category_id,
                 lead_date=today,
-                person_source="Direct",
+                person_source="DIRECT",
                 sub_source="Instagram"
             )
             
@@ -1924,7 +1924,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
             category_id=category_id,
             value=0.0,
             status="IN_PROGRESS",
-            source="Direct",
+            source="DIRECT",
             sub_source="Instagram",
             contact_number=""  # Required field, will be updated later
         )

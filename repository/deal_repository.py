@@ -69,9 +69,9 @@ def get_deal_by_id(deal_id) -> Deal:
 
 def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive_deal_id=None,
                 person_id=None, stage_id=None, category_id=None, value=0.0, status="IN_PROGRESS",
-                source="Direct", sub_source="Instagram", event_type=None, event_date=None,
+                source="DIRECT", sub_source="Instagram", event_type=None, event_date=None,
                 event_dates=None, venue=None, phone_number=None, contact_number=None):
-    from models.deal import DealStatus, DealSubSource
+    from models.deal import DealStatus, DealSubSource, CreatedBy
     from sqlalchemy import text
     
     session: Session = SessionLocal()
@@ -100,7 +100,13 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
         # Ensure contact_number is set (required field)
         if not contact_number:
             contact_number = phone_number or ""
-        
+
+        # Store deal_source in uppercase (e.g. DIRECT instead of Direct)
+        deal_source_value = source.upper() if source else "DIRECT"
+
+        # pipeline_history: array of pipeline IDs the deal has been in
+        pipeline_history_value = [pipeline_id] if pipeline_id else None
+
         new_deal = Deal(
             name=deal_name,
             value=value,
@@ -114,13 +120,17 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
             contacted_to=contacted_to,
             pipedrive_deal_id=pipedrive_deal_id,
             status=status_enum,
-            deal_source=source,  # Set deal_source field
+            deal_source=deal_source_value,
             deal_sub_source=sub_source_enum,
             event_type=event_type,
             event_date=event_date,
             event_dates=event_dates,
             venue=venue,
-            phone_number=phone_number
+            phone_number=phone_number,
+            created_by=CreatedBy.BOT,
+            created_by_name="BOT",
+            source_pipeline_id=pipeline_id,
+            pipeline_history=pipeline_history_value,
         )
         session.add(new_deal)
         session.commit()

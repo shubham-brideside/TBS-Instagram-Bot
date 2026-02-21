@@ -38,6 +38,11 @@ class DealSubSource(enum.Enum):
     EMAIL = "EMAIL"
 
 
+class CreatedBy(enum.Enum):
+    USER = "USER"
+    BOT = "BOT"
+
+
 class Deal(Base, TimestampMixin):
     __tablename__ = "deals"
 
@@ -93,6 +98,10 @@ class Deal(Base, TimestampMixin):
     google_calendar_event_id = Column(String(255), nullable=True)
     google_calendar_event_ids = Column(JSON, nullable=True)  # Multiple events support
     
+    # Audit
+    created_by = Column(Enum(CreatedBy), nullable=True, default=None)
+    created_by_name = Column(String(255), nullable=True)
+
     # Flags
     final_thank_you_sent = Column(Boolean, nullable=True, default=False)
     contact_number_asked = Column(Boolean, nullable=True, default=False)

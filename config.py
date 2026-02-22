@@ -49,6 +49,10 @@ DB_CONFIG = {
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
+# Venue → City enrichment (optional)
+ENABLE_VENUE_CITY_LOOKUP = os.getenv("ENABLE_VENUE_CITY_LOOKUP", "true").strip().lower() in ("1", "true", "yes", "y")
+NOMINATIM_BASE_URL = os.getenv("NOMINATIM_BASE_URL", "https://nominatim.openstreetmap.org").rstrip("/")
+
 GREETING_TEMPLATES = [
     'Hi there! ✨',
     'Hope you are doing good!',

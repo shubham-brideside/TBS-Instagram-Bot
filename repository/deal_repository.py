@@ -4,6 +4,7 @@ from models import Deal
 from database.connection import SessionLocal
 from utils.logger import logger  # <-- Add this import
 from services.crm_service import crm_service
+from utils.geo import resolve_city_from_venue
 
 def deal_exists(deal_name, contacted_to):
     session: Session = SessionLocal()
@@ -70,7 +71,7 @@ def get_deal_by_id(deal_id) -> Deal:
 def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive_deal_id=None,
                 person_id=None, stage_id=None, category_id=None, value=0.0, status="IN_PROGRESS",
                 source="DIRECT", sub_source="Instagram", event_type=None, event_date=None,
-                event_dates=None, venue=None, phone_number=None, contact_number=None):
+                event_dates=None, venue=None, city=None, phone_number=None, contact_number=None):
     from models.deal import DealStatus, DealSubSource, CreatedBy
     from sqlalchemy import text
     
@@ -107,6 +108,10 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
         # pipeline_history: array of pipeline IDs the deal has been in
         pipeline_history_value = [pipeline_id] if pipeline_id else None
 
+        # Derive city from venue if not provided
+        if (not city or str(city).strip() == "") and venue and str(venue).strip():
+            city = resolve_city_from_venue(str(venue))
+
         new_deal = Deal(
             name=deal_name,
             value=value,
@@ -126,6 +131,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
             event_date=event_date,
             event_dates=event_dates,
             venue=venue,
+            city=city,
             phone_number=phone_number,
             created_by=CreatedBy.BOT,
             created_by_name="BOT",
@@ -170,6 +176,17 @@ def update_deal_fields(deal_id: int, **kwargs):
         if kwargs.get('venue') and (deal.venue is None or str(deal.venue).strip() == "" or deal.venue != kwargs['venue']):
             deal.venue = kwargs['venue']
             updated_fields.append('venue')
+
+            # If city isn't explicitly provided, try to derive it from venue when city is empty
+            if (kwargs.get('city') is None or str(kwargs.get('city')).strip() == "") and (deal.city is None or str(deal.city).strip() == ""):
+                derived_city = resolve_city_from_venue(str(kwargs['venue']))
+                if derived_city and (deal.city is None or str(deal.city).strip() == "" or deal.city != derived_city):
+                    deal.city = derived_city
+                    updated_fields.append('city')
+
+        if kwargs.get('city') and (deal.city is None or str(deal.city).strip() == "" or deal.city != kwargs['city']):
+            deal.city = kwargs['city']
+            updated_fields.append('city')
         
         phone_number_added = False
         if kwargs.get('phone_number') and (deal.phone_number is None or str(deal.phone_number).strip() == "" or deal.phone_number != kwargs['phone_number']):
@@ -297,6 +314,19 @@ def update_deal_fields_force(deal_id: int, **kwargs):
             old_value = deal.venue
             deal.venue = kwargs['venue']
             updated_fields.append(f'venue: "{old_value}" → "{kwargs["venue"]}"')
+
+            # If city isn't explicitly provided, re-derive from updated venue
+            if kwargs.get('city') is None or str(kwargs.get('city')).strip() == "":
+                derived_city = resolve_city_from_venue(str(kwargs['venue']))
+                if derived_city and deal.city != derived_city:
+                    old_city = deal.city
+                    deal.city = derived_city
+                    updated_fields.append(f'city: "{old_city}" → "{derived_city}"')
+        
+        if kwargs.get('city'):
+            old_value = deal.city
+            deal.city = kwargs['city']
+            updated_fields.append(f'city: "{old_value}" → "{kwargs["city"]}"')
         
         if kwargs.get('phone_number'):
             old_value = deal.phone_number

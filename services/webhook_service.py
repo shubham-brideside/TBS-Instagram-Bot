@@ -1,13 +1,14 @@
 import json
 import re
 import traceback
-from typing import Optional
+from functools import lru_cache
+from typing import Optional, Any, Dict
 from flask import request
 
 # 🚨 ESSENTIAL DETAILS RULE: If ALL required fields (event_date, venue, phone_number) 
 # already exist in the deal, the bot will NOT send any reply and will NOT call the AI service.
 # This rule applies to ALL clients automatically without needing prompt modifications.
-from config import DEEPSEEK_API_KEY, GROQ_API_KEY, GROQ_MODEL, IG_ACCOUNT_ID, OPENAI_API_KEY, OPENAI_MODEL
+from config import DEEPSEEK_API_KEY, GROQ_API_KEY, GROQ_MODEL, IG_ACCOUNT_ID, OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
 from models.brideside_vendor import BridesideVendor
 from models.deal import Deal
 from models.processed_message import ProcessedMessage
@@ -96,6 +97,7 @@ def _get_stage_id_by_name(pipeline_id: int, stage_name: str) -> Optional[int]:
     finally:
         session.close()
 from utils.validators import is_valid_phone_number
+from utils.geo import heuristic_city_from_venue
 from repository.brideside_vendor_repository import (
     get_brideside_vendor_by_username,
     get_brideside_vendor_by_ig_account_id,
@@ -111,6 +113,115 @@ from services.ai_service_factory import AIServiceFactory
 from dateutil import parser as date_parser
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+_openai_city_client = None
+
+
+def _get_openai_city_client():
+    global _openai_city_client
+    if _openai_city_client is not None:
+        return _openai_city_client
+    if not OPENAI_API_KEY or OpenAI is None:
+        return None
+
+    kwargs: Dict[str, Any] = {"api_key": OPENAI_API_KEY}
+    if OPENAI_BASE_URL:
+        kwargs["base_url"] = OPENAI_BASE_URL
+
+    _openai_city_client = OpenAI(**kwargs)
+    return _openai_city_client
+
+
+@lru_cache(maxsize=512)
+def _extract_city_from_venue_openai(venue: str) -> Optional[str]:
+    """
+    Use OpenAI to extract a city name from a venue string.
+
+    Returns a city string (<=255 chars) or None if unknown.
+    """
+    if not venue or not isinstance(venue, str):
+        return None
+
+    venue = venue.strip()
+    if len(venue) < 3:
+        return None
+
+    client = _get_openai_city_client()
+    if client is None:
+        return heuristic_city_from_venue(venue)
+
+    system_prompt = (
+        "You extract the CITY from a venue/location string.\n"
+        "Return ONLY valid JSON: {\"city\": \"...\"}\n"
+        "Rules:\n"
+        "- City only (no country/state/pincode)\n"
+        "- If uncertain/unknown, return empty string\n"
+        "- Keep it short\n"
+    )
+
+    try:
+        completion = client.chat.completions.create(
+            model=OPENAI_MODEL or "gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": venue},
+            ],
+            temperature=0,
+            max_tokens=50,
+            response_format={"type": "json_object"},
+        )
+        content = completion.choices[0].message.content if completion.choices else None
+        if not content:
+            return heuristic_city_from_venue(venue)
+
+        data = json.loads(content)
+        city = data.get("city", "")
+        if city is None:
+            return None
+        city = str(city).strip()
+        if not city:
+            return None
+        if len(city) > 255:
+            city = city[:255]
+        return city
+    except Exception as e:
+        logger.warning("OpenAI city extraction failed for venue '%s': %s", venue[:120], e)
+        return heuristic_city_from_venue(venue)
+
+
+def _enrich_extracted_fields_with_city(deal: Deal, extracted_fields: Dict[str, str]) -> None:
+    """
+    After we get venue from AI, derive city using OpenAI (only if city missing).
+    Mutates extracted_fields in place.
+    """
+    try:
+        venue = (extracted_fields.get("venue") or "").strip()
+        if not venue:
+            return
+
+        # Only enrich if deal.city is missing and city not already present in extracted_fields
+        existing_city = str(getattr(deal, "city", "") or "").strip()
+        if existing_city:
+            return
+        if (extracted_fields.get("city") or "").strip():
+            return
+
+        # Trigger ONLY when venue is new/changed compared to what's saved
+        current_venue = str(getattr(deal, "venue", "") or "").strip()
+        if current_venue and current_venue.lower() == venue.lower():
+            return
+
+        city = _extract_city_from_venue_openai(venue)
+        if city:
+            extracted_fields["city"] = city
+            logger.info("🏙️ Derived city from venue via OpenAI: venue='%s' -> city='%s'", venue[:120], city)
+    except Exception as e:
+        logger.warning("City enrichment error: %s", e)
 
 
 def _handle_get_request() -> tuple[str, int]:
@@ -659,6 +770,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                                 'venue': response.get('venue', ''),
                                 'phone_number': response.get('phone_number', '')
                             }
+                            _enrich_extracted_fields_with_city(deal, extracted_fields)
                             
                             # Check for changed fields (comparing with existing deal data)
                             changed_fields = _get_changed_fields_from_deal(deal, extracted_fields)
@@ -772,6 +884,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     'venue': response.get('venue', ''),
                     'phone_number': response.get('phone_number', '')
                 }
+                _enrich_extracted_fields_with_city(deal, extracted_fields)
                 
                 # Check for changed fields (comparing with existing deal data)
                 changed_fields = _get_changed_fields_from_deal(deal, extracted_fields)
@@ -1002,6 +1115,14 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                         thank_you_fields_to_update['event_date'] = event_date
                     if venue:
                         thank_you_fields_to_update['venue'] = venue
+                        # Trigger city extraction after we have venue
+                        if deal and (not getattr(deal, "city", None) or str(getattr(deal, "city", "")).strip() == ""):
+                            current_venue = str(getattr(deal, "venue", "") or "").strip()
+                            new_venue = str(venue).strip()
+                            if new_venue and (not current_venue or current_venue.lower() != new_venue.lower()):
+                                city = _extract_city_from_venue_openai(new_venue)
+                                if city:
+                                    thank_you_fields_to_update['city'] = city
                     if phone_number_extracted:
                         thank_you_fields_to_update['phone_number'] = phone_number_extracted
                     
@@ -1420,6 +1541,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                                     'venue': response.get('venue', ''),
                                     'phone_number': response.get('phone_number', '')
                                 }
+                                _enrich_extracted_fields_with_city(deal, extracted_fields)
                                 
                                 # Check for changed fields (comparing with existing deal data)
                                 changed_fields = _get_changed_fields_from_deal(deal, extracted_fields)

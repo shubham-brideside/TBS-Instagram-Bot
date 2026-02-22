@@ -66,6 +66,7 @@ class Deal(Base, TimestampMixin):
     event_date = Column(Date, nullable=True)
     event_dates = Column(JSON, nullable=True)  # Multiple dates support
     venue = Column(String(255), nullable=True)
+    city = Column(String(255), nullable=True)
     expected_gathering = Column(Integer, nullable=True)
     budget = Column(DECIMAL(10, 2), nullable=True)
     

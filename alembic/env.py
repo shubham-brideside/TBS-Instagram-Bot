@@ -1,10 +1,12 @@
 
 from logging.config import fileConfig
+from urllib.parse import quote_plus
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import create_engine
 from sqlalchemy import pool
 
 from alembic import context
+from config import DB_CONFIG
 from models import Base
 
 # this is the Alembic Config object, which provides
@@ -28,6 +30,15 @@ target_metadata = Base.metadata
 # ... etc.
 
 
+def _build_database_url() -> str:
+    password = quote_plus(DB_CONFIG["password"] or "")
+    return (
+        f"mysql+pymysql://{DB_CONFIG['user']}:{password}"
+        f"@{DB_CONFIG['host']}/{DB_CONFIG['database']}"
+        f"?charset={DB_CONFIG['charset']}"
+    )
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -40,7 +51,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = _build_database_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -59,10 +70,14 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    connectable = create_engine(
+        _build_database_url(),
         poolclass=pool.NullPool,
+        connect_args={
+            "ssl": {
+                "check_hostname": False
+            }
+        },
     )
 
     with connectable.connect() as connection:

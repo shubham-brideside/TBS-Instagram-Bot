@@ -108,6 +108,7 @@ class Deal(Base, TimestampMixin):
     contact_number_asked = Column(Boolean, nullable=True, default=False)
     event_date_asked = Column(Boolean, nullable=True, default=False)
     venue_asked = Column(Boolean, nullable=True, default=False)
+    venue_received = Column(Boolean, nullable=True, default=False)
     is_deleted = Column(SmallInteger, nullable=False, default=0)
     
     # Relationships

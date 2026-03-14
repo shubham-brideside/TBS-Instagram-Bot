@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Optional, Any, Dict
 from flask import request
 
-# 🚨 ESSENTIAL DETAILS RULE: If ALL required fields (event_date, venue, phone_number) 
+# 🚨 ESSENTIAL DETAILS RULE: If ALL required fields (event_date, phone_number) 
 # already exist in the deal, the bot will NOT send any reply and will NOT call the AI service.
 # This rule applies to ALL clients automatically without needing prompt modifications.
 from config import DEEPSEEK_API_KEY, GROQ_API_KEY, GROQ_MODEL, IG_ACCOUNT_ID, OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
@@ -500,17 +500,17 @@ def _smart_clean_message(message: str, missing_fields: list) -> str:
     return smart_message
 
 def _get_missing_fields_from_deal(deal) -> list[str]:
-    """Get list of fields that are null in the deal object."""
+    """Get list of fields the bot still needs to collect for this deal."""
     missing_fields = []
     
-    # Check each REQUIRED field and add to missing_fields if it's None or empty
-    # Note: full_name and event_type are NOT required fields - they are set automatically
+    # Venue is still collected from the user, but tracked via venue_received
+    # instead of persisting the raw venue/city values on the deal.
     if not deal.event_date:
         missing_fields.append('event_date')
-    
-    if not deal.venue or str(deal.venue).strip() == "":
+
+    if not _safe_bool(getattr(deal, 'venue_received', False)):
         missing_fields.append('venue')
-    
+
     if not deal.phone_number or str(deal.phone_number).strip() == "":
         missing_fields.append('phone_number')
     
@@ -554,7 +554,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
     """
     Handle user message flow by creating contact and deal as needed.
     
-    🚨 ESSENTIAL DETAILS RULE: If ALL required fields (event_date, venue, phone_number)
+    🚨 ESSENTIAL DETAILS RULE: If ALL required fields (event_date, phone_number)
     already exist in the deal, this function will return early without calling the AI service or sending any message.
     This ensures that once all essential details are collected, the bot stops responding.
     This rule applies to ALL clients automatically without needing prompt modifications.
@@ -602,7 +602,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
             missing_required_fields = [field for field in required_fields if field in missing_fields]
             
             if not missing_required_fields:
-                logger.info("🚨 All essential details (Event Date, Venue, Phone Number) already collected for %s.", sender_username)
+                logger.info("🚨 All essential details (Event Date, Venue and Phone Number) already collected for %s.", sender_username)
                 
                 # Check if final thank you message has been sent
                 final_thank_you_sent = getattr(deal, 'final_thank_you_sent', False)
@@ -721,7 +721,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                         logger.info("📅 User provided event date - will reset event_date_asked flag to False")
                     
                     # Check if user provided venue and reset flag
-                    if venue_asked and venue_provided and 'venue' in missing_fields:
+                    if venue_asked and venue_provided:
                         flags_to_reset.append('venue_asked')
                         logger.info("🏢 User provided venue - will reset venue_asked flag to False")
                     
@@ -730,18 +730,20 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                         flags_to_reset.append('contact_number_asked')
                         logger.info("📞 User provided phone number - will reset contact_number_asked flag to False")
                     
-                    # 🚨 NEW LOGIC: Only send message if ALL three asked columns are False
-                    # Check if all three asked columns will be False after this update
+                    # 🚨 NEW LOGIC: Only send a follow-up when all asked fields have
+                    # been answered or reset for this turn.
                     will_contact_number_asked_be_false = not contact_number_asked or (contact_number_asked and 'contact_number_asked' in flags_to_reset)
                     will_event_date_asked_be_false = not event_date_asked or (event_date_asked and 'event_date_asked' in flags_to_reset)
                     will_venue_asked_be_false = not venue_asked or (venue_asked and 'venue_asked' in flags_to_reset)
                     
-                    all_asked_columns_will_be_false = (will_contact_number_asked_be_false and 
-                                                     will_event_date_asked_be_false and 
-                                                     will_venue_asked_be_false)
+                    all_asked_columns_will_be_false = (
+                        will_contact_number_asked_be_false and
+                        will_event_date_asked_be_false and
+                        will_venue_asked_be_false
+                    )
                     
                     if all_asked_columns_will_be_false:
-                        logger.info("✅ All three asked columns will be False after this update. Message will be sent.")
+                        logger.info("✅ All asked columns will be False after this update. Message will be sent.")
                         # Continue with normal flow to send the message
                     else:
                         logger.info("🚫 Not all asked columns are False yet. Checking if message should be blocked...")
@@ -758,7 +760,6 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                         if venue_asked and 'venue' in missing_fields and not venue_provided:
                             should_block_message = True
                             block_reason = "venue"
-                        
                         if should_block_message:
                             logger.info("🚫 User was asked for %s but didn't provide it. No message will be sent.", block_reason)
                             
@@ -1173,7 +1174,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                             logger.info("✅ Updated event_date_asked flag to True for deal %s", deal.id)
                         
                         # Check if we're asking for venue and set the flag
-                        if 'venue' in missing_fields and ('venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower()):
+                        if 'venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower():
                             logger.info("🏢 Asking for venue in greeting - setting venue_asked flag to True")
                             update_deal_fields(deal.id, venue_asked=True)
                             logger.info("✅ Updated venue_asked flag to True for deal %s", deal.id)
@@ -1185,7 +1186,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                             logger.info("✅ Updated event_date_asked flag to True for deal %s", deal.id)
                         
                         # Check if we're asking for venue and set the flag
-                        if 'venue' in missing_fields and ('venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower()):
+                        if 'venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower():
                             logger.info("🏢 Asking for venue in greeting - setting venue_asked flag to True")
                             update_deal_fields(deal.id, venue_asked=True)
                             logger.info("✅ Updated venue_asked flag to True for deal %s", deal.id)
@@ -1433,9 +1434,6 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                         if event_date_asked and 'event_date' in missing_fields and not event_date_provided:
                             should_block_message = True
                             block_reason = "event date"
-                        if venue_asked and 'venue' in missing_fields and not venue_provided:
-                            should_block_message = True
-                            block_reason = "venue"
                         
                         if should_block_message:
                             logger.info("🚫 User was asked for %s but didn't provide it. No message will be sent.", block_reason)
@@ -1835,7 +1833,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 missing_required_fields = [field for field in required_fields if field in missing_fields]
                 
                 if not missing_required_fields:
-                    logger.info("🚨 All essential details (Event Date, Venue, Phone Number) already collected for %s.", sender_username)
+                    logger.info("🚨 All essential details (Event Date, Venue and Phone Number) already collected for %s.", sender_username)
                     
                     # Check if final thank you message has been sent
                     final_thank_you_sent = getattr(deal, 'final_thank_you_sent', False)
@@ -1994,7 +1992,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     if 'event_date' in missing_fields and ('event date' in message_to_send.lower() or 'date' in message_to_send.lower() or 'when' in message_to_send.lower()):
                         update_deal_fields(deal.id, event_date_asked=True)
                         logger.info("✅ Set event_date_asked flag to True for deal %s", deal.id)
-                    if 'venue' in missing_fields and ('venue' in message_to_send.lower() or 'location' in message_to_send.lower() or 'where' in message_to_send.lower()):
+                    if 'venue' in message_to_send.lower() or 'location' in message_to_send.lower() or 'where' in message_to_send.lower():
                         update_deal_fields(deal.id, venue_asked=True)
                         logger.info("✅ Set venue_asked flag to True for deal %s", deal.id)
                     
@@ -2342,7 +2340,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                         logger.info("✅ Updated event_date_asked flag to True for deal %s", deal.id)
                     
                     # Check if we're asking for venue and set the flag
-                    if 'venue' in missing_fields and ('venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower()):
+                    if 'venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower():
                         logger.info("🏢 Asking for venue in greeting - setting venue_asked flag to True")
                         update_deal_fields(deal.id, venue_asked=True)
                         logger.info("✅ Updated venue_asked flag to True for deal %s", deal.id)
@@ -2470,7 +2468,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                             logger.info("✅ Updated event_date_asked flag to True for deal %s", deal.id)
                         
                         # Check if we're asking for venue and set the flag
-                        if 'venue' in missing_fields and ('venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower()):
+                        if 'venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower():
                             logger.info("🏢 Asking for venue in greeting - setting venue_asked flag to True")
                             update_deal_fields(deal.id, venue_asked=True)
                             logger.info("✅ Updated venue_asked flag to True for deal %s", deal.id)
@@ -3041,7 +3039,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                             logger.info("✅ Updated event_date_asked flag to True for deal %s", deal.id)
                         
                         # Check if we're asking for venue and set the flag
-                        if 'venue' in missing_fields and ('venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower()):
+                        if 'venue' in original_message.lower() or 'location' in original_message.lower() or 'where' in original_message.lower():
                             logger.info("🏢 Asking for venue in greeting - setting venue_asked flag to True")
                             update_deal_fields(deal.id, venue_asked=True)
                             logger.info("✅ Updated venue_asked flag to True for deal %s", deal.id)

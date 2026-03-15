@@ -407,6 +407,26 @@ def _reset_venue_asked_flag(deal_id: int) -> None:
     except Exception as e:
         logger.error("❌ Error resetting venue_asked flag: %s", e)
 
+def _sync_person_phone(sender_username: str, phone_number: Optional[str]) -> None:
+    """Persist the extracted phone number to the persons table."""
+    if not phone_number or not str(phone_number).strip():
+        return
+
+    try:
+        person_id = get_person_id_by_username(sender_username)
+        if person_id is None:
+            logger.warning("⚠️ Could not find person for username %s while syncing phone", sender_username)
+            return
+
+        update_person_fields(
+            person_id,
+            instagram_id=sender_username,
+            phone=phone_number
+        )
+        logger.info("✅ Synced phone number to persons table for %s", sender_username)
+    except Exception as e:
+        logger.error("❌ Error syncing phone number to persons table for %s: %s", sender_username, e)
+
 def _safe_bool(value) -> bool:
     """
     Safely convert a value to boolean, handling MySQL bit(1) type conversion issues.
@@ -799,6 +819,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                                 update_success = update_deal_fields(deal.id, **fields_to_update)
                                 if update_success:
                                     logger.info("✅ Successfully updated local deal fields (no message sent)")
+                                    _sync_person_phone(sender_username, fields_to_update.get('phone_number'))
                             
                             # 🚨 CRITICAL FIX: Reset flags for provided fields even when message is blocked
                             if flags_to_reset:
@@ -1132,6 +1153,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                         update_success = update_deal_fields(deal.id, **thank_you_fields_to_update)
                         if update_success:
                             logger.info("✅ Saved structured data from 'Thank you' response: %s", thank_you_fields_to_update)
+                            _sync_person_phone(sender_username, thank_you_fields_to_update.get('phone_number'))
                         else:
                             logger.error("❌ Failed to save structured data from 'Thank you' response: %s", thank_you_fields_to_update)
                     

@@ -211,6 +211,10 @@ class AIServiceManager:
     def is_collab_or_advertisement(self, message: str) -> bool:
         """Proxy method to current service."""
         return self.get_current_service().is_collab_or_advertisement(message)
+
+    def is_course_or_class_enquiry(self, message: str) -> bool:
+        """Proxy method to current service."""
+        return self.get_current_service().is_course_or_class_enquiry(message)
     
     def get_service_info(self) -> Dict:
         """Get information about current service."""

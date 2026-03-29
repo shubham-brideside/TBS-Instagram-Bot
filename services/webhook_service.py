@@ -289,26 +289,16 @@ def _should_skip_message(sender_id: str, recipient_id: str, message_text: str, m
     if is_course_related_user(insta_user):
         return True, "Skipping message from course-related user"
     
-    # Check for course/class enquiry regardless of user presence - THIS MUST HAPPEN BEFORE COLLAB/AD CHECK
+    # Check skip-bucket enquiry (course/class/model/editing/collab/ad) in a single AI call
     try:
         is_course_enquiry = ai_service.is_course_or_class_enquiry(message_text)
         if is_course_enquiry:
             # Store the user in course_related_users table
             create_course_related_user(insta_user, brideside_user.id)
-            return True, "Skipping message is related to course or class enquiry"
+            return True, "Skipping message is related to course/class/model/editing/collab/ad enquiry"
     except Exception as e:
-        logger.error(f"❌ Error during course enquiry check: {e}")
+        logger.error(f"❌ Error during combined enquiry check: {e}")
         # Continue with normal processing if course check fails
-    
-    # Check for collab/advertisement AFTER course enquiry check
-    if ai_service.is_collab_or_advertisement(message_text):
-        # Store the user in course_related_users table for collab/ad messages as well
-        try:
-            create_course_related_user(insta_user, brideside_user.id)
-            logger.info(f"✅ Added collab/ad user {insta_user} to course_related_users table")
-        except Exception as e:
-            logger.error(f"❌ Error adding collab/ad user to course_related_users: {e}")
-        return True, "Skipping collab/ad"
     
     if not instagram_user_present:
         if ai_service.is_message_not_related_to_provided_service(message_text, brideside_user.services):

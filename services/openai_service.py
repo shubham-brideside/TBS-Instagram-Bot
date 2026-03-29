@@ -37,10 +37,6 @@ class OpenAIService(AIServiceInterface):
                              previous_conversation_summary: str = "", current_deal_data: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         """Get AI response with structured JSON output."""
         try:
-            # Check for advertisement/spam
-            if self.is_collab_or_advertisement(user_message):
-                return self._create_ad_decline_response(user_message, previous_conversation_summary)
-
             # Check for emoji/appreciation
             if self.is_emoji_or_appreciation(user_message):
                 return {
@@ -108,48 +104,44 @@ class OpenAIService(AIServiceInterface):
         return not message_clean or message_clean in appreciation_words or all(word in appreciation_words for word in message_clean.split())
 
     def is_collab_or_advertisement(self, message: str) -> bool:
-        """Check if message is promotional or collaboration/advertisement related."""
-        message_lower = message.lower().strip()
-        
-        # Check for common ad/collab keywords
-        ad_keywords = [
-            'promote', 'promotion', 'collab', 'collaboration', 'sponsor', 'sponsored',
-            'advertise', 'advertisement', 'marketing', 'partnership', 'influencer',
-            'paid', 'deal', 'business opportunity', 'opportunity', 'proposal',
-            'campaign', 'brand', 'promote your', 'promoting your', 'work with',
-            'work together', 'paid promotion', 'paid partnership', 'paid collab',
-            'affiliate', 'commission', 'earn', 'revenue', 'monetize', 'monetization','followers',
-            'views', 'comments','gain your insta', 'increase followers', 'increase likes', 'boost followers'
-        ]
-        
-        # Check for common ad patterns
-        ad_patterns = [
-            r'(?i)dm\s+for\s+collab',
-            r'(?i)check\s+(?:out\s+)?my\s+(?:page|profile|account)',
-            r'(?i)follow\s+(?:back|me)',
-            r'(?i)check\s+my\s+bio',
-            r'(?i)visit\s+my\s+(?:page|profile)',
-            r'(?i)interested\s+in\s+collab',
-            r'(?i)business\s+proposal',
-            r'(?i)marketing\s+opportunity'
-        ]
-        
-        # Check for keywords
-        if any(kw in message_lower for kw in ad_keywords):
-            return True
-            
-        # Check for patterns
-        if any(re.search(pattern, message) for pattern in ad_patterns):
-            return True
-            
-        # URL-only check (Instagram, Facebook, WhatsApp, etc.)
-        if re.fullmatch(r'https?://[\w./?=&%\-]+', message_lower):
-            return True
-        # Instagram handle only check
-        if re.fullmatch(r'@?[\w.]+', message_lower) and (message_lower.startswith('@') or 'instagram.com' in message_lower):
-            return True
-            
-        return False 
+        """Legacy helper using full-message intent classification instead of keywords."""
+        try:
+            system_prompt = (
+                "You classify Instagram DMs for collaboration/advertisement intent.\n"
+                "Respond ONLY in this JSON format: { \"result\": true } or { \"result\": false }\n\n"
+                "Return { \"result\": true } if the primary intent is collaboration, sponsorship, paid promotion, "
+                "influencer outreach, affiliate/commission promotion, follower-growth/engagement marketing, "
+                "or unsolicited business promotion where the sender is pitching their own account/service/business.\n\n"
+                "Return { \"result\": false } for genuine customer enquiries about booking the vendor's services, "
+                "including pricing, packages, availability, bridal inclusions, event details, and booking questions.\n"
+                "If unsure, return false."
+            )
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message}
+            ]
+
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0,
+                max_tokens=256,
+                top_p=1,
+                stream=False
+            )
+
+            ai_response = completion.choices[0].message.content
+            start = ai_response.find('{')
+            end = ai_response.rfind('}') + 1
+            if start == -1 or end == -1:
+                raise ValueError("No valid JSON in AI response")
+
+            parsed = json.loads(ai_response[start:end])
+            return parsed.get("result", False)
+        except Exception as e:
+            logger.error(f"❌ Error in is_collab_or_advertisement: {e}")
+            return False
     
   
 
@@ -218,9 +210,10 @@ class OpenAIService(AIServiceInterface):
 
     def is_course_or_class_enquiry(self, message: str) -> bool:
         """
-        Uses the AI model to determine if the message is related to course, class, model, or editing enquiries.
-        
-        Returns True if message is about courses/classes/modeling/editing, else False.
+        Uses the AI model to determine if the message should be skipped because it is
+        related to course/class/model/editing enquiries or collab/advertisement intent.
+
+        Returns True if message is in the skip bucket, else False.
         """
         try:
             # 🚨 QUICK KEYWORD CHECK: Catch obvious promotional/unrelated messages before AI call
@@ -261,7 +254,7 @@ class OpenAIService(AIServiceInterface):
 
             
             system_prompt = (
-                "You are an assistant that classifies Instagram DMs for course/class/model/editing enquiries.\n"
+                "You are an assistant that classifies Instagram DMs for course/class/model/editing enquiries and collab/advertisement intent.\n"
                 "Respond ONLY in this JSON format: { \"result\": true } or { \"result\": false }\n\n"
                 "🚨 CRITICAL: Return { \"result\": true } for ANY message that starts with promotional commands like:\n"
                 "- 'Book your...'\n"
@@ -336,6 +329,12 @@ class OpenAIService(AIServiceInterface):
                 "- Third-party service selling (e.g., 'book designer', 'hire decorator', 'best photographer', 'top makeup artist')\n"
                 "- Promotional commands (e.g., 'book now', 'call us', 'dm us', 'contact for services')\n"
                 "- Service provider advertisements (e.g., 'we are photographers', 'we do makeup', 'we provide decor')\n"
+                "- Collaboration/advertisement intent (e.g., 'let's collaborate', 'paid promotion', 'sponsored post', 'brand collaboration', 'marketing proposal')\n"
+                "- Influencer/creator pitches (e.g., 'collab with your brand', 'I can promote your page', 'paid partnership', 'influencer collaboration')\n"
+                "- Follower/engagement growth promotions (e.g., 'increase followers', 'boost likes', 'grow your Instagram', 'gain views/comments')\n"
+                "- Affiliate/commission-based promotions (e.g., 'affiliate partnership', 'commission-based collaboration', 'earn through promotion')\n"
+                "- Unsolicited sales or business outreach where the sender is pitching their own service to the vendor rather than enquiring about the vendor's services\n"
+                "- Messages that ask the vendor to promote, sponsor, market, or partner with the sender's business/account/page\n"
                 "- Choreographer inquiries (e.g., 'choreographer', 'dance choreographer', 'wedding choreographer', 'sangeet choreographer', 'choreography services')\n"
                 "- Dance services (e.g., 'dance classes', 'wedding dance', 'couple dance', 'sangeet dance', 'dance performance')\n"
                 "- Camera brand mentions (e.g., 'Sony', 'Canon', 'Nikon', 'Fujifilm', 'Panasonic', 'Sony camera', 'Canon camera')\n"
@@ -352,7 +351,7 @@ class OpenAIService(AIServiceInterface):
                 "- Personal consultations (e.g., 'consultation', 'meeting')\n"
             )
 
-            logger.info(f"Checking course/class/model/editing enquiry for message: {message[:100]}...")
+            logger.info(f"Checking course/class/model/editing/collab/ad enquiry for message: {message[:100]}...")
             
             messages = [
                 {"role": "system", "content": system_prompt},
@@ -369,7 +368,7 @@ class OpenAIService(AIServiceInterface):
             )
 
             ai_response = completion.choices[0].message.content
-            logger.info(f"Course/class/model/editing enquiry AI response: {ai_response}")
+            logger.info(f"Course/class/model/editing/collab/ad enquiry AI response: {ai_response}")
             
             # Extract JSON result
             start = ai_response.find('{')
@@ -381,9 +380,9 @@ class OpenAIService(AIServiceInterface):
             result = parsed.get("result", False)
             
             if result:
-                logger.info(f"✅ Message identified as course/class/model/editing enquiry")
+                logger.info(f"✅ Message identified as skip-bucket enquiry (course/class/model/editing/collab/ad)")
             else:
-                logger.info(f"❌ Message is NOT a course/class/model/editing enquiry")
+                logger.info(f"❌ Message is NOT a skip-bucket enquiry")
                 
             return result
 

@@ -106,6 +106,7 @@ from repository.brideside_vendor_repository import (
 )
 from repository.instagram_user_repository import is_user_present, create_instagram_user, update_instagram_user_contacted_to, get_instagram_user_by_username
 from repository.person_repository import create_person_entry, get_person_id_by_username, get_person_by_username, update_person_fields
+from repository.organization_repository import get_organization_owner_id
 from repository.deal_repository import deal_exists, create_deal, get_deal_by_user_name, update_deal_fields, update_deal_fields_force
 from repository.processed_message_repository import is_message_processed, mark_message_as_processed, cleanup_old_processed_messages
 from utils.logger import logger
@@ -1292,9 +1293,16 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 # Person doesn't exist, create it in database
                 logger.info("Person not found for %s. Creating new person...", sender_username)
                 
-                # Get organization_id and owner_id from brideside_vendor
+                # Get organization_id; person owner_id from organizations.owner_id (same as deals), else 69
                 organization_id = int(brideside_user.organization_id) if brideside_user.organization_id else None
-                owner_id = int(brideside_user.account_owner) if brideside_user.account_owner else None
+                person_owner_id = get_organization_owner_id(organization_id)
+                if person_owner_id is None:
+                    logger.warning(
+                        "No organizations.owner_id for organization_id=%s; defaulting person owner_id to 69 for %s.",
+                        organization_id,
+                        sender_username,
+                    )
+                    person_owner_id = 69
                 
                 # Get category_id from organization
                 category_id = None
@@ -1309,7 +1317,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     name=sender_username,  # Use instagram_username as name
                     instagram_id=sender_username,  # Use instagram_username as instagram_id
                     organization_id=organization_id,
-                    owner_id=owner_id,
+                    owner_id=person_owner_id,
                     category_id=category_id,
                     lead_date=today,
                     person_source="DIRECT",
@@ -1331,7 +1339,14 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 
                 # Get organization_id and pipeline_id from brideside_vendor
                 organization_id = int(brideside_user.organization_id) if brideside_user.organization_id else None
-                owner_id = int(brideside_user.account_owner) if brideside_user.account_owner else None
+                deal_owner_id = get_organization_owner_id(organization_id)
+                if deal_owner_id is None:
+                    logger.warning(
+                        "No organizations.owner_id for organization_id=%s; defaulting deal owner_id to 69 for %s.",
+                        organization_id,
+                        sender_username,
+                    )
+                    deal_owner_id = 69
                 pipeline_id = int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None
                 
                 # Get stage_id for "Lead In" stage
@@ -1356,7 +1371,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     organization_id=organization_id,
                     contacted_to=brideside_user.id,
                     person_id=person_id,
-                    owner_id=owner_id,
+                    owner_id=deal_owner_id,
                     stage_id=stage_id,
                     category_id=category_id,
                     value=0.0,
@@ -1794,9 +1809,16 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
             # Person doesn't exist, create it in database
             logger.info("Person not found for %s. Creating new person...", sender_username)
             
-            # Get organization_id and owner_id from brideside_vendor
+            # Get organization_id; person owner_id from organizations.owner_id (same as deals), else 69
             organization_id = int(brideside_user.organization_id) if brideside_user.organization_id else None
-            owner_id = int(brideside_user.account_owner) if brideside_user.account_owner else None
+            person_owner_id = get_organization_owner_id(organization_id)
+            if person_owner_id is None:
+                logger.warning(
+                    "No organizations.owner_id for organization_id=%s; defaulting person owner_id to 69 for %s.",
+                    organization_id,
+                    sender_username,
+                )
+                person_owner_id = 69
             
             # Get category_id from organization
             category_id = None
@@ -1810,7 +1832,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 name=sender_username,  # Use instagram_username as name
                 instagram_id=sender_username,  # Use instagram_username as instagram_id
                 organization_id=organization_id,
-                owner_id=owner_id,
+                owner_id=person_owner_id,
                 category_id=category_id,
                 lead_date=today,
                 person_source="DIRECT",
@@ -2031,7 +2053,14 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
         
         # Get organization_id and pipeline_id from brideside_vendor
         organization_id = int(brideside_user.organization_id) if brideside_user.organization_id else None
-        owner_id = int(brideside_user.account_owner) if brideside_user.account_owner else None
+        deal_owner_id = get_organization_owner_id(organization_id)
+        if deal_owner_id is None:
+            logger.warning(
+                "No organizations.owner_id for organization_id=%s; defaulting deal owner_id to 69 for %s.",
+                organization_id,
+                sender_username,
+            )
+            deal_owner_id = 69
         pipeline_id = int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None
         
         # Get stage_id for "Lead In" stage
@@ -2055,7 +2084,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
             organization_id=organization_id,
             contacted_to=brideside_user.id,
             person_id=person_id,
-            owner_id=owner_id,
+            owner_id=deal_owner_id,
             stage_id=stage_id,
             category_id=category_id,
             value=0.0,

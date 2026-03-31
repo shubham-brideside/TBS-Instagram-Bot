@@ -77,6 +77,9 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
     
     session: Session = SessionLocal()
     try:
+        # Default when caller passes no owner (org lookup failed, etc.)
+        resolved_owner_id = 69 if owner_id is None else owner_id
+
         # Convert string enums to enum values
         status_enum = DealStatus[status.upper()] if status else DealStatus.IN_PROGRESS
         
@@ -116,7 +119,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
             pipeline_id=pipeline_id,
             organization_id=organization_id,
             person_id=person_id,
-            owner_id=owner_id,
+            owner_id=resolved_owner_id,
             stage_id=stage_id,
             category_id=category_id,
             contacted_to=contacted_to,

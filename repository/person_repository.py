@@ -65,11 +65,14 @@ def create_person_entry(name: str, instagram_id: Optional[str] = None,
             except (KeyError, AttributeError):
                 logger.warning(f"Invalid sub_source: {sub_source}, using None")
         
+        # Match deal creation: default owner when not provided
+        resolved_owner_id = 69 if owner_id is None else owner_id
+
         new_person = Person(
             name=name,
             instagram_id=instagram_id,
             organization_id=organization_id,
-            owner_id=owner_id,
+            owner_id=resolved_owner_id,
             category_id=category_id,
             lead_date=lead_date or date.today(),
             person_source=person_source_enum,

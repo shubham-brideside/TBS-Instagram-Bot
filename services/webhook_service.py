@@ -1331,6 +1331,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 
                 # Get organization_id and pipeline_id from brideside_vendor
                 organization_id = int(brideside_user.organization_id) if brideside_user.organization_id else None
+                owner_id = int(brideside_user.account_owner) if brideside_user.account_owner else None
                 pipeline_id = int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None
                 
                 # Get stage_id for "Lead In" stage
@@ -1355,6 +1356,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     organization_id=organization_id,
                     contacted_to=brideside_user.id,
                     person_id=person_id,
+                    owner_id=owner_id,
                     stage_id=stage_id,
                     category_id=category_id,
                     value=0.0,
@@ -2029,6 +2031,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
         
         # Get organization_id and pipeline_id from brideside_vendor
         organization_id = int(brideside_user.organization_id) if brideside_user.organization_id else None
+        owner_id = int(brideside_user.account_owner) if brideside_user.account_owner else None
         pipeline_id = int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None
         
         # Get stage_id for "Lead In" stage
@@ -2052,6 +2055,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
             organization_id=organization_id,
             contacted_to=brideside_user.id,
             person_id=person_id,
+            owner_id=owner_id,
             stage_id=stage_id,
             category_id=category_id,
             value=0.0,

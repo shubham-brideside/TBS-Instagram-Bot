@@ -68,7 +68,7 @@ def get_deal_by_id(deal_id) -> Deal:
         session.close()
 
 def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive_deal_id=None,
-                person_id=None, stage_id=None, category_id=None, value=0.0, status="IN_PROGRESS",
+                person_id=None, owner_id=None, stage_id=None, category_id=None, value=0.0, status="IN_PROGRESS",
                 source="DIRECT", sub_source="Instagram", event_type=None, event_date=None,
                 event_dates=None, venue=None, city=None, phone_number=None, contact_number=None,
                 venue_received=False):
@@ -116,6 +116,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
             pipeline_id=pipeline_id,
             organization_id=organization_id,
             person_id=person_id,
+            owner_id=owner_id,
             stage_id=stage_id,
             category_id=category_id,
             contacted_to=contacted_to,

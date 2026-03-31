@@ -73,6 +73,7 @@ class Deal(Base, TimestampMixin):
     # Relationships
     person_id = Column(BigInteger, ForeignKey("persons.id"), nullable=True, index=True)
     organization_id = Column(BigInteger, ForeignKey("organizations.id"), nullable=True, index=True)
+    owner_id = Column(BigInteger, ForeignKey("users.id"), nullable=True, index=True)
     pipeline_id = Column(BigInteger, ForeignKey("pipelines.id"), nullable=True, index=True)
     stage_id = Column(BigInteger, ForeignKey("stages.id"), nullable=True, index=True)
     source_id = Column(BigInteger, ForeignKey("sources.id"), nullable=True, index=True)

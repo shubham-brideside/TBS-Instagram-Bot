@@ -73,8 +73,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
                 event_dates=None, venue=None, city=None, phone_number=None, contact_number=None,
                 venue_received=False):
     from models.deal import DealStatus, DealSubSource, CreatedBy
-    from sqlalchemy import text
-    
+
     session: Session = SessionLocal()
     try:
         # Default when caller passes no owner (org lookup failed, etc.)
@@ -90,17 +89,6 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
             except (KeyError, AttributeError):
                 logger.warning(f"Invalid sub_source: {sub_source}, using None")
         
-        # Get category name if category_id is provided, otherwise use a default
-        category_name = "Photography"  # Default
-        if category_id:
-            # Query category name from database
-            result = session.execute(
-                text("SELECT name FROM categories WHERE id = :cat_id"),
-                {"cat_id": category_id}
-            ).first()
-            if result:
-                category_name = result[0]
-        
         # Ensure contact_number is set (required field)
         if not contact_number:
             contact_number = phone_number or ""
@@ -115,7 +103,6 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
             name=deal_name,
             value=value,
             contact_number=contact_number,
-            category=category_name,
             pipeline_id=pipeline_id,
             organization_id=organization_id,
             person_id=person_id,

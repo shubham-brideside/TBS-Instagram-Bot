@@ -55,7 +55,6 @@ class Deal(Base, TimestampMixin):
     
     # Status and categorization
     status = Column(Enum(DealStatus), nullable=False, default=DealStatus.IN_PROGRESS)
-    category = Column(String(50), nullable=False)
     label = Column(Enum(DealLabel), nullable=True)
     deal_source = Column(String(50), nullable=True)
     deal_sub_source = Column(Enum(DealSubSource), nullable=True)

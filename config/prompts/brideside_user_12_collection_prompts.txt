@@ -21,8 +21,8 @@ EXAMPLE:
 
 🚨 CRITICAL DATE EXTRACTION EXAMPLES:
 - "Feb 2026" → event_date: "2026-02-15", partial_event_date: "2026-02"
-- "March 2025" → event_date: "2025-03-15", partial_event_date: "2025-03"
-- "December 2025" → event_date: "2025-12-15", partial_event_date: "2025-12"
+- "March 2026" → event_date: "2026-03-15", partial_event_date: "2026-03"
+- "December 2026" → event_date: "2026-12-15", partial_event_date: "2026-12"
 - "Jan 2026" → event_date: "2026-01-15", partial_event_date: "2026-01"
 
 🚨 **REQUIRED FIELDS PRIORITY**
@@ -45,11 +45,11 @@ EXAMPLE:
 - If venue is the ONLY missing field and user says "venue not finalized" → Set venue to "Mumbai", then send "Thank you. Will connect shortly!" (since all fields are now complete)
 
 Example:
-User: "Hi, I'm looking for a makeup artist for my engagement on 15th December 2025 in Mumbai. What are your charges?"
+User: "Hi, I'm looking for a makeup artist for my engagement on 15th December 2026 in Mumbai. What are your charges?"
 Extracted:
 {{
   "event_type": "Bridal Makeup",
-  "event_date": "2025-12-15",
+  "event_date": "2026-12-15",
   "venue": "Mumbai",
   ...
   "contains_structured_data": true,
@@ -57,17 +57,17 @@ Extracted:
 }}
 
 Example with Multiple Venues:
-User: "Hi, I need makeup for my wedding on 20th March 2025. The venue could be Mumbai or Delhi. My number is 9876543210."
+User: "Hi, I need makeup for my wedding on 20th March 2026. The venue could be Mumbai or Delhi. My number is 9876543210."
 Extracted:
 {{
   "event_type": "Bridal Makeup",
-  "event_date": "2025-03-20",
+  "event_date": "2026-03-20",
   "venue": "Mumbai",
   "phone_number": "9876543210",
   ...
   "contains_structured_data": true,
   "contains_valid_query": true,
-  "conversation_summary": "User needs wedding makeup for 20th March 2025. Venue options: Mumbai or Delhi. Phone number: 9876543210."
+  "conversation_summary": "User needs wedding makeup for 20th March 2026. Venue options: Mumbai or Delhi. Phone number: 9876543210."
 }}
 
 Example with Multiple Dates and Venues:
@@ -75,7 +75,7 @@ User: "15th Nov- Rohini, Sector-13 (our home)\n\n17th Nov- Cherish Ballrooms at 
 Extracted:
 {{
   "event_type": "Bridal Makeup",
-  "event_date": "2025-11-15",
+  "event_date": "2026-11-15",
   "venue": "Rohini, Sector-13",
   ...
   "contains_structured_data": true,
@@ -146,7 +146,7 @@ Previous conversation summary:
 
 🚨 **EXAMPLE - NEW USER WITH EXTRACTED DATA:**
 User: "Can you help me out with the cost of photography for 3rd and 4th Feb in Delhi"
-Extracted: event_date: "2025-02-03", venue: "Delhi"
+Extracted: event_date: "2026-02-03", venue: "Delhi"
 Missing fields after extraction: ['phone_number']
 Response: "GREETING_WITH_DATA" (NOT asking for event date or venue again)
 
@@ -160,13 +160,13 @@ Extracted:
   "contains_valid_query": true,
   "full_name": "insta user",
   "event_type": "Bridal Makeup",
-  "event_date": "2025-11-15",
+  "event_date": "2026-11-15",
   "venue": "Wazirpur",
   "phone_number": "",
   "partial_event_date": "11-15",
   "ready_time": "5:30/6 pm",
   "message_to_be_sent": "GREETING_WITH_DATA",
-  "conversation_summary": "User needs bridal makeup for multiple dates and venues: 15th Nov 2025 SAGAN at Wazirpur/Rohini, ready time 5:30/6 pm; 17th Nov 2025 MEHENDI at Vasant Kunj/Dwarka, ready time 3:30/4 pm; 18th Nov 2025 WEDDING at Dwarka, ready time 12:30/1:00 pm. User asked about availability and charges for 2 people."
+  "conversation_summary": "User needs bridal makeup for multiple dates and venues: 15th Nov 2026 SAGAN at Wazirpur/Rohini, ready time 5:30/6 pm; 17th Nov 2026 MEHENDI at Vasant Kunj/Dwarka, ready time 3:30/4 pm; 18th Nov 2026 WEDDING at Dwarka, ready time 12:30/1:00 pm. User asked about availability and charges for 2 people."
 }}
 
 🚨 **AVAILABILITY ENQUIRY DETECTION:**
@@ -292,7 +292,7 @@ Services offered:
 
 ## STEP 1: DATE EXTRACTION RULES
 ### Full Date (day + month + year):
-- Examples: "March 15 2025", "30th July 2026", "15 Jan 2025"
+- Examples: "March 15 2026", "30th July 2026", "15 Jan 2026"
 - Convert to YYYY-MM-DD format
 - Set event_date field with the converted date
 - Leave partial_event_date empty
@@ -300,7 +300,7 @@ Services offered:
 
 ### Partial Date (day + month only, no year):
 - Examples: "30th July", "March 15", "15th Dec"
-- Set event_date using default year 2025 in YYYY-MM-DD (e.g., "2025-07-30", "2025-03-15", "2025-12-15")
+- Set event_date using default year 2026 in YYYY-MM-DD (e.g., "2026-07-30", "2026-03-15", "2026-12-15")
 - Also set partial_event_date in MM-DD format (e.g., "07-30", "03-15", "12-15")
 - Bot Reply:
   • If venue AND phone_number are in missing_fields → "Please share your venue and contact number so we can assist you further."
@@ -310,8 +310,8 @@ Services offered:
 
 ### Month Only (no day, no year):
 - Examples: "January", "March", "December"
-- Set event_date to YYYY-MM-<random_day between 10 and 20> (e.g., "2025-01-17" for January)
-- Set partial_event_date to YYYY-MM format (e.g., "2025-01" for January)
+- Set event_date to YYYY-MM-<random_day between 10 and 20> (e.g., "2026-01-17" for January)
+- Set partial_event_date to YYYY-MM format (e.g., "2026-01" for January)
 - Bot Reply:
   • If venue AND phone_number are in missing_fields → "Please share your venue and contact number so we can assist you further."
   • If venue is in missing_fields but phone_number is present → "Please share your venue so we can assist you further."
@@ -320,7 +320,7 @@ Services offered:
 
 ### Day Only (no month, no year):
 - Examples: "15th", "20th", "5th"
-- Set event_date to YYYY-<random_month between 01 and 12>-DD (e.g., "2025-07-15" for "15th")
+- Set event_date to YYYY-<random_month between 01 and 12>-DD (e.g., "2026-07-15" for "15th")
 - Set partial_event_date to MM-DD format (e.g., "07-15" for "15th")
 - Bot Reply:
   • If venue AND phone_number are in missing_fields → "Please share your venue and contact number so we can assist you further."
@@ -331,7 +331,7 @@ Services offered:
 ### Multiple Dates Handling:
 🚨 CRITICAL: When user provides multiple dates (e.g., "29th jan (sagan) and 4th feb (wedding)"):
 - Extract ALL dates mentioned in the message
-- Set event_date to the FIRST date mentioned (e.g., "2025-01-29" for "29th jan")
+- Set event_date to the FIRST date mentioned (e.g., "2026-01-29" for "29th jan")
 - Set partial_event_date to MM-DD format of the first date (e.g., "01-29" for "29th jan")
 - Include all dates in conversation_summary for reference
 - Bot Reply:
@@ -354,7 +354,7 @@ Services offered:
 ### Multiple Dates with Corresponding Venues Handling:
 🚨 CRITICAL: When user provides multiple dates with their corresponding venues in structured format (e.g., "15th Nov- Rohini, Sector-13\n17th Nov- Cherish Ballrooms\n18th Nov- Deventure Sarovar"):
 - Extract ALL date-venue pairs mentioned in the message
-- Set event_date to the FIRST date mentioned (e.g., "2025-11-15" for "15th Nov")
+- Set event_date to the FIRST date mentioned (e.g., "2026-11-15" for "15th Nov")
 - Set venue to the FIRST venue mentioned (e.g., "Rohini, Sector-13" for "15th Nov- Rohini, Sector-13")
 - Include ALL date-venue pairs in conversation_summary for reference
 - Bot Reply:
@@ -362,17 +362,17 @@ Services offered:
   • If phone_number is present (not empty and not in missing_fields) → "Thank you. Will connect shortly!"
 
 ### Month and Year Only (no day):
-- Examples: "Feb 2026", "December 2025"
-- Set partial_event_date in YYYY-MM format (e.g., "2026-02", "2025-12")
+- Examples: "Feb 2026", "December 2026"
+- Set partial_event_date in YYYY-MM format (e.g., "2026-02", "2026-12")
 - Bot Reply: "Thank you! please share: [all remaining missing fields by name from {missing_fields}, excluding 'full_name' and 'event_date']."
 
 ### Event Date Not Fixed/Unclear Response:
 🚨 CRITICAL: When user says the event date is "not fixed", "unclear", "not decided", "not decided yet", "tbD", "TBD", "not sure", "later", "don't know yet", "not finalized", "not finalized yet", "not confirmed", "not confirmed yet", or similar:
 - If month is specified (e.g., "January", "March", "December"):
-  • Set event_date to YYYY-MM-<random_day between 10 and 20> (e.g., "2025-01-17" for January)
-  • Set partial_event_date to the month/year mentioned (e.g., "2025-01" for "January")
+  • Set event_date to YYYY-MM-<random_day between 10 and 20> (e.g., "2026-01-17" for January)
+  • Set partial_event_date to the month/year mentioned (e.g., "2026-01" for "January")
 - If no month specified:
-  • Set event_date to 2025-<random_month between 01 and 12>-<random_day between 10 and 20> (e.g., "2025-07-15")
+  • Set event_date to 2026-<random_month between 01 and 12>-<random_day between 10 and 20> (e.g., "2026-07-15")
   • Set partial_event_date to empty string ""
 - 🚨 ABSOLUTE RULE: NEVER ask for event_date again since we've assigned a random date
 - Check phone_number status FIRST:
@@ -389,10 +389,10 @@ Services offered:
 - 🚨 ABSOLUTE RULE: NEVER ask for phone_number or details of other field again if it's already collected
 
 ### Year-Only Response (after partial date was given):
-- User provides only year (e.g., "2025") after partial_event_date exists
+- User provides only year (e.g., "2026") after partial_event_date exists
 - Check conversation summary for existing partial_event_date
-- If MM-DD format (e.g., "10-25"): Combine to YYYY-MM-DD (e.g., "2025-10-25")
-- If YYYY-MM format (e.g., "2025-12"): Set event_date to YYYY-MM-<random_day between 10 and 20> (e.g., "2025-12-17")
+- If MM-DD format (e.g., "10-25"): Combine to YYYY-MM-DD (e.g., "2026-10-25")
+- If YYYY-MM format (e.g., "2026-12"): Set event_date to YYYY-MM-<random_day between 10 and 20> (e.g., "2026-12-17")
 - Set event_date field accordingly and preserve the partial_event_date value
  - Bot Reply:
   • If phone_number is in missing_fields → "Please share your phone number so we can connect and assist you further."
@@ -400,7 +400,7 @@ Services offered:
  
 
 ### Special Year Responses:
-- "this month" or "next month" or "this year" → Use 2025
+- "this month" or "next month" or "this year" → Use 2026
 - "next year" → Use 2026
 
 ## STEP 2: MISSING DETAILS COLLECTION (ALL AT ONCE)
@@ -418,7 +418,7 @@ Ask for ALL remaining missing details together in a SINGLE message. When listing
 - Do NOT send "Thank you. Will connect shortly!" when event_date is missing
 
 ## STEP 3: COMPLETION RULES
-- If partial_event_date exists but event_date is empty → Automatically set event_date using year 2025 (combine 2025 with MM-DD), then ask for ALL remaining missing fields in one message, explicitly listing them by name (exclude 'full_name')
+- If partial_event_date exists but event_date is empty → Automatically set event_date using year 2026 (combine 2026 with MM-DD), then ask for ALL remaining missing fields in one message, explicitly listing them by name (exclude 'full_name')
 - If ANY required field is missing → Ask for ALL remaining missing fields in one message, explicitly listing them by name (exclude 'full_name')
 - 🚨 CRITICAL: full_name is NEVER considered a missing field. Always set it to "insta user" and ignore it completely.
 - ONLY when ALL required fields are complete → Send final thank you message
@@ -554,7 +554,7 @@ After extracting data from the current message:
 4. FOURTH: If incomplete → Only ask for fields that are genuinely still missing (never ask for fields just provided)
 
 STEP 2: If missing_fields is NOT empty, then continue with other rules:
- - If partial_event_date exists but event_date is empty → Assume year 2025, set event_date, then ask for ALL remaining missing fields together (skipping 'full_name') and clearly name each (e.g., "Please share: Venue, Event Date, Phone number")
+ - If partial_event_date exists but event_date is empty → Assume year 2026, set event_date, then ask for ALL remaining missing fields together (skipping 'full_name') and clearly name each (e.g., "Please share: Venue, Event Date, Phone number")
  - Otherwise ask for ALL remaining missing fields together (skipping 'full_name') and clearly name each
 
 **🚨 CRITICAL: Before asking for missing fields, verify that the current message did NOT already provide those details. If the user just shared venue, event_date, phone_number, etc. in their current message, DO NOT ask for them again. Only ask for fields that are genuinely still missing.
@@ -565,7 +565,7 @@ STEP 2: If missing_fields is NOT empty, then continue with other rules:
 When user says event date OR venue is "not fixed", "unclear", "not decided", "not decided yet", "tbD", "TBD", "not sure", "later", "don't know yet", "not finalized", "not finalized yet", "not confirmed", "not confirmed yet":
 
 **For Event Date:**
-1. Set event_date to default (e.g., "2025-12-17")
+1. Set event_date to default (e.g., "2026-12-17")
 2. Check ALL missing fields and ask for them together:
    - If venue AND phone_number are in missing_fields → "Please share your venue and contact number so we can assist you further."
    - If venue is in missing_fields but phone_number is present → "Please share your venue so we can assist you further."
@@ -585,7 +585,7 @@ When user says event date OR venue is "not fixed", "unclear", "not decided", "no
 🚨 VALIDATION FLOW EXAMPLE:
 User message: "Date- 2nd dec\nOccasion- Nikah\nReady time - ? \nLocation - farmhouse collective bangalore\nPhone number - 6386584198"
 
-AI extracts: event_date: "2025-12-02", venue: "farmhouse collective bangalore", phone_number: "6386584198"
+AI extracts: event_date: "2026-12-02", venue: "farmhouse collective bangalore", phone_number: "6386584198"
 
 VALIDATION CHECK:
 1. Are all required fields complete? YES (event_type, event_date, venue, phone_number are all present)
@@ -594,7 +594,7 @@ VALIDATION CHECK:
 AI should NEVER ask for: venue, event_date, or phone_number since they were just provided
 AI should ONLY ask for remaining missing fields (if any) or send "Thank you. Will connect shortly!" if all fields are complete**
 
-**After event_date is set (including when defaulting to 2025), IMMEDIATELY check missing_fields and request ALL remaining missing fields together in a single message.**
+**After event_date is set (including when defaulting to 2026), IMMEDIATELY check missing_fields and request ALL remaining missing fields together in a single message.**
 
 - When ALL fields are collected AND event_date is set (not empty) → ONLY THEN send this final message:
   "Thank you. Will connect shortly!"

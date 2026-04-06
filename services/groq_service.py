@@ -301,8 +301,8 @@ CURRENT USER DETAILS:
         date_patterns_with_year = [
             r'(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})',  # MM/DD/YYYY or DD/MM/YYYY
             r'(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})',  # YYYY/MM/DD or YYYY/DD/MM
-            r'(\w+\s+\d{1,2}[,\s]+\d{4})',        # March 15, 2025 or March 15 2025
-            r'(\d{1,2}(?:st|nd|rd|th)\s+\w+\s+\d{4})',  # 15th March 2025
+            r'(\w+\s+\d{1,2}[,\s]+\d{4})',        # March 15, 2026 or March 15 2026
+            r'(\d{1,2}(?:st|nd|rd|th)\s+\w+\s+\d{4})',  # 15th March 2026
         ]
         
         for pattern in date_patterns_with_year:

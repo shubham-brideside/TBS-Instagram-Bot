@@ -334,16 +334,16 @@ def _validate_and_format_date(date_str: str) -> str:
             '%m/%d/%Y',
             '%d-%m-%Y',
             '%Y/%m/%d',
-            '%d %B %Y',      # 30 July 2025
-            '%dth %B %Y',    # 30th July 2025
-            '%dst %B %Y',    # 1st July 2025
-            '%dnd %B %Y',    # 2nd July 2025
-            '%drd %B %Y',    # 3rd July 2025
-            '%d %b %Y',      # 30 Jul 2025
-            '%dth %b %Y',    # 30th Jul 2025
-            '%dst %b %Y',    # 1st Jul 2025
-            '%dnd %b %Y',    # 2nd Jul 2025
-            '%drd %b %Y',    # 3rd Jul 2025
+            '%d %B %Y',      # 30 July 2026
+            '%dth %B %Y',    # 30th July 2026
+            '%dst %B %Y',    # 1st July 2026
+            '%dnd %B %Y',    # 2nd July 2026
+            '%drd %B %Y',    # 3rd July 2026
+            '%d %b %Y',      # 30 Jul 2026
+            '%dth %b %Y',    # 30th Jul 2026
+            '%dst %b %Y',    # 1st Jul 2026
+            '%dnd %b %Y',    # 2nd Jul 2026
+            '%drd %b %Y',    # 3rd Jul 2026
         ]
         
         for fmt in formats:
@@ -2791,7 +2791,7 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 msg_lower = msg.lower()
                 if any(kw in msg_lower for kw in keywords):
                     return True
-                # Simple date pattern: e.g. 25th dec, 25/12, 25-12, 2025
+                # Simple date pattern: e.g. 25th dec, 25/12, 25-12, 2026
                 if re.search(r'\b\d{1,2}(st|nd|rd|th)?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b', msg_lower):
                     return True
                 if re.search(r'\b\d{1,2}[/-]\d{1,2}\b', msg_lower):

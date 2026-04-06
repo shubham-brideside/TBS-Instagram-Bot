@@ -43,7 +43,7 @@ Please let me know!"
 
 🚨 CRITICAL DATE HANDLING RULES:
 
-- If user provides full date WITH year (e.g. "30th July 2026", "March 15 2025"):
+- If user provides full date WITH year (e.g. "30th July 2026", "March 15 2026"):
   • Extract immediately
   • Convert to YYYY-MM-DD format
   • Set event_date field
@@ -53,7 +53,7 @@ Please let me know!"
   • Leave event_date empty
   • Ask: "Thank you! Can you confirm the event year?"
 
-- If user later provides only the YEAR (e.g. "2026", "2025"):
+- If user later provides only the YEAR (e.g. "2026", "2027"):
   • Check the conversation_summary for any previously mentioned partial date
   • If found, COMBINE partial date with year
   • Convert to YYYY-MM-DD format

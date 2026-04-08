@@ -40,6 +40,7 @@ def test_course_enquiry_detection():
         "I'm looking for a diploma course in beauty and makeup.",
         
         # Event services (should return False)
+        "What services do you offer?",
         "Hello, I need makeup for my wedding on 15th November.",
         "What are your charges for bridal makeup?",
         "Are you available for a party makeup on 20th December?",

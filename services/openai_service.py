@@ -9,6 +9,7 @@ from .prompt_manager import prompt_manager
 from repository.conversation_repository import ConversationRepository
 from repository.brideside_vendor_repository import get_brideside_vendor_by_ig_account_id
 from utils.logger import logger
+from utils.course_enquiry_keywords import is_customer_asking_vendor_service_menu
 from typing import List
 
 try:
@@ -252,6 +253,12 @@ class OpenAIService(AIServiceInterface):
                 logger.info(f"✅ Customer booking inquiry detected via keyword check: {message[:50]}...")
                 return False  # NOT a course enquiry - it's a valid customer question
 
+            if is_customer_asking_vendor_service_menu(message):
+                logger.info(
+                    f"✅ Customer vendor service-menu question detected via keyword check: {message[:50]}..."
+                )
+                return False
+
             
             system_prompt = (
                 "You are an assistant that classifies Instagram DMs for course/class/model/editing enquiries and collab/advertisement intent.\n"
@@ -346,6 +353,7 @@ class OpenAIService(AIServiceInterface):
                 "- General greetings (e.g., 'hi', 'hello', 'good morning')\n"
                 "- Pricing for services (e.g., 'makeup charges', 'service rates')\n"
                 "- Customer booking inquiries (e.g., 'how do I book', 'how to book', 'how can I book', 'how do I book your service', 'how to book your service')\n"
+                "- Customer questions about what the vendor's business offers (e.g., 'what services do you offer', 'what are your services', 'which services do you provide') — the customer is asking the vendor's menu, not pitching another business\n"
                 "- Availability for events (e.g., 'available for wedding', 'free on date')\n"
                 "- Event details (e.g., 'wedding date', 'event venue')\n"
                 "- Personal consultations (e.g., 'consultation', 'meeting')\n"

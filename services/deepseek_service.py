@@ -7,6 +7,7 @@ from .prompt_manager import prompt_manager
 from repository.conversation_repository import ConversationRepository
 import traceback
 from utils.logger import logger
+from utils.course_enquiry_keywords import is_customer_asking_vendor_service_menu
 
 
 class DeepSeekService(AIServiceInterface):
@@ -401,6 +402,12 @@ CURRENT USER DETAILS:
         Returns True if message is about courses/classes, else False.
         """
         try:
+            if is_customer_asking_vendor_service_menu(message):
+                logger.info(
+                    f"✅ Customer vendor service-menu question detected via keyword check: {message[:50]}..."
+                )
+                return False
+
             system_prompt = (
                 "You are an assistant that classifies Instagram DMs for course/class enquiries.\n"
                 "Respond ONLY in this JSON format: { \"result\": true } or { \"result\": false }\n\n"
@@ -427,6 +434,7 @@ CURRENT USER DETAILS:
                 "- Service bookings (e.g., 'book for wedding', 'makeup for event')\n"
                 "- General greetings (e.g., 'hi', 'hello', 'good morning')\n"
                 "- Pricing for services (e.g., 'makeup charges', 'service rates')\n"
+                "- Customer questions about what the vendor offers (e.g., 'what services do you offer', 'what are your services')\n"
                 "- Availability for events (e.g., 'available for wedding', 'free on date')\n"
                 "- Event details (e.g., 'wedding date', 'event venue')\n"
                 "- Personal consultations (e.g., 'consultation', 'meeting')\n"

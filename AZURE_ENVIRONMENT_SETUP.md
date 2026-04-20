@@ -65,6 +65,19 @@ Click **"New application setting"** for each variable below:
 | `DB_PASSWORD` | `your_database_password` | Database password |
 | `DB_CHARSET` | `utf8mb4` | Database character set |
 
+#### Sequential pipeline rotation (Instagram new deals)
+
+These are **not** in `.env` on the server — **you must add them in Azure** (same names as local `.env`). If they are missing, every new deal uses **`brideside_vendors.pipeline_id` only** (e.g. always pipeline **46**).
+
+| Name | Example | Description |
+|------|---------|-------------|
+| `TBS_SEQUENTIAL_PIPELINE_PAIRS` | `45:27` | Comma-separated `organization_id:brideside_vendor_id` pairs that use rotation. |
+| `TBS_SEQUENTIAL_PIPELINE_ORG_IDS` | *(optional)* | Used only if `TBS_SEQUENTIAL_PIPELINE_PAIRS` is empty: org IDs that rotate. |
+| `TBS_SEQUENTIAL_PIPELINE_VENDOR_IDS` | *(optional)* | Vendor allowlist when using `ORG_IDS` mode. |
+| `TBS_SEQUENTIAL_PIPELINE_ORDER_45` | `46,107` | *(optional)* Override pipeline order for org `45`; default is DB `pipelines` for that org, ascending `id`. |
+
+After saving, **restart** the App Service. Check **Log stream** at startup for either **“Sequential pipeline: enabled”** or **“DISABLED”**.
+
 #### Pipedrive Field Mapping (Optional)
 These are pre-configured with your current field IDs. Only change if needed:
 

@@ -1,0 +1,2 @@
+# Normalize line endings for CI; keep file saved as UTF-8 in your editor (not "Unicode" / UTF-16 on Windows).
+requirements.txt text eol=lf

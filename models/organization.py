@@ -14,6 +14,8 @@ class Organization(Base, TimestampMixin):
     owner_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=True, index=True)
     category: Mapped[str] = mapped_column(String(50), nullable=False)
     google_calendar_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # CRM round-robin cursor; Instagram bot sequential pipeline rotation updates this when enabled.
+    round_robin_last_pipeline_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     
     def __repr__(self):
         return f"<Organization(id={self.id}, name='{self.name}', category='{self.category}')>"

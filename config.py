@@ -49,6 +49,68 @@ DB_CONFIG = {
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
+
+def _parse_int_set_from_csv(env_val: str) -> set[int]:
+    out: set[int] = set()
+    for part in (env_val or "").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.add(int(part))
+        except ValueError:
+            continue
+    return out
+
+
+def _load_sequential_pipeline_orders() -> dict[int, list[int]]:
+    """Parse TBS_SEQUENTIAL_PIPELINE_ORDER_<orgId>=id1,id2,... from the environment."""
+    prefix = "TBS_SEQUENTIAL_PIPELINE_ORDER_"
+    result: dict[int, list[int]] = {}
+    for key, value in os.environ.items():
+        if not key.startswith(prefix) or not (value or "").strip():
+            continue
+        suffix = key[len(prefix) :]
+        try:
+            org_id = int(suffix)
+        except ValueError:
+            continue
+        ids: list[int] = []
+        for part in value.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                ids.append(int(part))
+            except ValueError:
+                continue
+        if ids:
+            result[org_id] = ids
+    return result
+
+
+def _parse_org_vendor_pairs(env_val: str) -> set[tuple[int, int]]:
+    """Parse TBS_SEQUENTIAL_PIPELINE_PAIRS=45:27,109:12"""
+    out: set[tuple[int, int]] = set()
+    for segment in (env_val or "").split(","):
+        segment = segment.strip()
+        if ":" not in segment:
+            continue
+        left, _, right = segment.partition(":")
+        try:
+            out.add((int(left.strip()), int(right.strip())))
+        except ValueError:
+            continue
+    return out
+
+
+# Instagram deal creation: rotate through pipelines one new deal at a time (Scenario B).
+# Cursor is stored on organizations.round_robin_last_pipeline_id (see sequential_pipeline_service).
+SEQUENTIAL_PIPELINE_PAIRS = _parse_org_vendor_pairs(os.getenv("TBS_SEQUENTIAL_PIPELINE_PAIRS", ""))
+SEQUENTIAL_PIPELINE_ORG_IDS = _parse_int_set_from_csv(os.getenv("TBS_SEQUENTIAL_PIPELINE_ORG_IDS", ""))
+SEQUENTIAL_PIPELINE_VENDOR_IDS = _parse_int_set_from_csv(os.getenv("TBS_SEQUENTIAL_PIPELINE_VENDOR_IDS", ""))
+SEQUENTIAL_PIPELINE_ORDER_BY_ORG = _load_sequential_pipeline_orders()
+
 # Venue → City enrichment (optional)
 ENABLE_VENUE_CITY_LOOKUP = os.getenv("ENABLE_VENUE_CITY_LOOKUP", "true").strip().lower() in ("1", "true", "yes", "y")
 NOMINATIM_BASE_URL = os.getenv("NOMINATIM_BASE_URL", "https://nominatim.openstreetmap.org").rstrip("/")

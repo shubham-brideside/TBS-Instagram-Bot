@@ -107,6 +107,7 @@ from repository.brideside_vendor_repository import (
 from repository.instagram_user_repository import is_user_present, create_instagram_user, update_instagram_user_contacted_to, get_instagram_user_by_username
 from repository.person_repository import create_person_entry, get_person_id_by_username, get_person_by_username, update_person_fields
 from repository.organization_repository import get_organization_owner_id
+from services.sequential_pipeline_service import resolve_pipeline_id_for_new_instagram_deal
 from repository.deal_repository import deal_exists, create_deal, get_deal_by_user_name, update_deal_fields, update_deal_fields_force
 from repository.processed_message_repository import is_message_processed, mark_message_as_processed, cleanup_old_processed_messages
 from utils.logger import logger
@@ -1348,6 +1349,9 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     )
                     deal_owner_id = 69
                 pipeline_id = int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None
+                pipeline_id = resolve_pipeline_id_for_new_instagram_deal(
+                    organization_id, brideside_user.id, pipeline_id
+                )
                 
                 # Get stage_id for "Lead In" stage
                 stage_id = None
@@ -2062,6 +2066,9 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
             )
             deal_owner_id = 69
         pipeline_id = int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None
+        pipeline_id = resolve_pipeline_id_for_new_instagram_deal(
+            organization_id, brideside_user.id, pipeline_id
+        )
         
         # Get stage_id for "Lead In" stage
         stage_id = None

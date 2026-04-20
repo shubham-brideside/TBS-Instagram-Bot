@@ -8,7 +8,17 @@ from flask import request
 # 🚨 ESSENTIAL DETAILS RULE: If ALL required fields (event_date, phone_number) 
 # already exist in the deal, the bot will NOT send any reply and will NOT call the AI service.
 # This rule applies to ALL clients automatically without needing prompt modifications.
-from config import DEEPSEEK_API_KEY, GROQ_API_KEY, GROQ_MODEL, IG_ACCOUNT_ID, OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
+from config import (
+    DEEPSEEK_API_KEY,
+    GROQ_API_KEY,
+    GROQ_MODEL,
+    IG_ACCOUNT_ID,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+    OPENAI_BASE_URL,
+    SEQUENTIAL_PIPELINE_ORG_IDS,
+    SEQUENTIAL_PIPELINE_PAIRS,
+)
 from models.brideside_vendor import BridesideVendor
 from models.deal import Deal
 from models.processed_message import ProcessedMessage
@@ -1352,6 +1362,12 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                 pipeline_id = resolve_pipeline_id_for_new_instagram_deal(
                     organization_id, brideside_user.id, pipeline_id
                 )
+                logger.info(
+                    "New deal pipeline_id=%s (brideside_vendors.pipeline_id was %s; sequential env loaded=%s)",
+                    pipeline_id,
+                    int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None,
+                    bool(SEQUENTIAL_PIPELINE_PAIRS or SEQUENTIAL_PIPELINE_ORG_IDS),
+                )
                 
                 # Get stage_id for "Lead In" stage
                 stage_id = None
@@ -2068,6 +2084,12 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
         pipeline_id = int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None
         pipeline_id = resolve_pipeline_id_for_new_instagram_deal(
             organization_id, brideside_user.id, pipeline_id
+        )
+        logger.info(
+            "New deal pipeline_id=%s (brideside_vendors.pipeline_id was %s; sequential env loaded=%s)",
+            pipeline_id,
+            int(brideside_user.pipeline_id) if brideside_user.pipeline_id else None,
+            bool(SEQUENTIAL_PIPELINE_PAIRS or SEQUENTIAL_PIPELINE_ORG_IDS),
         )
         
         # Get stage_id for "Lead In" stage
@@ -3275,7 +3297,12 @@ def _handle_post_request() -> tuple[str, int]:
     brideside_user: BridesideVendor = get_brideside_vendor_by_ig_account_id(recipient_id) # type: ignore
             
     if brideside_user:
-        logger.info("User ID: %s, Organization ID: %s, Pipeline ID: %s", brideside_user.id, brideside_user.organization_id, brideside_user.pipeline_id)
+        logger.info(
+            "Brideside vendor: id=%s, organization_id=%s, pipeline_id (DB column; round-robin applied later on new deal)=%s",
+            brideside_user.id,
+            brideside_user.organization_id,
+            brideside_user.pipeline_id,
+        )
         logger.info("Instagram Account ID: %s", brideside_user.ig_account_id)
         
         # Get usernames using the user's access token

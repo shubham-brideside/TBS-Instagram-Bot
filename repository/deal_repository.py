@@ -71,7 +71,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
                 person_id=None, owner_id=None, stage_id=None, category_id=None, value=0.0, status="IN_PROGRESS",
                 source="DIRECT", sub_source="Instagram", event_type=None, event_date=None,
                 event_dates=None, venue=None, city=None, phone_number=None, contact_number=None,
-                venue_received=False):
+                venue_received=False, company=False):
     from models.deal import DealStatus, DealSubSource, CreatedBy
 
     session: Session = SessionLocal()
@@ -101,7 +101,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
 
         new_deal = Deal(
             name=deal_name,
-            company=deal_name,
+            company=bool(company),
             value=value,
             contact_number=contact_number,
             pipeline_id=pipeline_id,

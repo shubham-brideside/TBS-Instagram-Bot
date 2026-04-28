@@ -101,6 +101,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
 
         new_deal = Deal(
             name=deal_name,
+            company=deal_name,
             value=value,
             contact_number=contact_number,
             pipeline_id=pipeline_id,

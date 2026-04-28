@@ -48,6 +48,7 @@ class Deal(Base, TimestampMixin):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True, index=True)
     name = Column(String(100), nullable=False)
+    company = Column(String(255), nullable=False)
     value = Column(DECIMAL(12, 2), nullable=False)
     deal_value = Column(DECIMAL(10, 2), nullable=True)  # Legacy field
     contact_number = Column(String(20), nullable=False)

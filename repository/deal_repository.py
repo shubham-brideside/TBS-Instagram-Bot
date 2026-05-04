@@ -91,8 +91,8 @@ def get_mirror_deal_for_primary(primary_deal_id: int, mirror_organization_id: in
 def create_deal(deal_name, pipeline_id, organization_id, contacted_to=None, pipedrive_deal_id=None,
                 person_id=None, owner_id=None, stage_id=None, category_id=None, value=0.0, status="IN_PROGRESS",
                 source="DIRECT", sub_source="Instagram", event_type=None, event_date=None,
-                event_dates=None, venue=None, city=None, phone_number=None, contact_number=None,
-                venue_received=False, referenced_deal_id=None, referenced_pipeline_id=None):
+                event_dates=None,                 venue=None, city=None, phone_number=None, contact_number=None,
+                venue_received=False, company=False, referenced_deal_id=None, referenced_pipeline_id=None):
     from models.deal import DealStatus, DealSubSource, CreatedBy
 
     session: Session = SessionLocal()
@@ -122,6 +122,7 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to=None, pipe
 
         new_deal = Deal(
             name=deal_name,
+            company=bool(company),
             value=value,
             contact_number=contact_number,
             pipeline_id=pipeline_id,

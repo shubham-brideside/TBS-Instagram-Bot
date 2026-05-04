@@ -19,7 +19,13 @@ class User(Base, TimestampMixin):
     password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     manager_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=True, index=True)
     role_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
-    
+    # Hub presales routing: DIRECT vs AUTO_DIVERT (Instagram mirror deals use DIRECT only).
+    tbs_presales_deal_lane: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    is_tbs_user: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    tbs_default_pipeline_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("pipelines.id"), nullable=True, index=True
+    )
+
     # Self-referential relationship for manager
     manager = relationship("User", remote_side=[id], backref="subordinates")
 

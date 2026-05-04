@@ -42,7 +42,20 @@ class CRMService:
             if response.status_code in [200, 201]:
                 return response.json()
             else:
-                logger.error(f"CRM API request failed: {response.status_code} - {response.text}")
+                hint = ""
+                if response.status_code == 401:
+                    hint = " — invalid or missing CRM_AUTH_TOKEN (JWT expired?)"
+                elif response.status_code == 403:
+                    hint = (
+                        " — token valid but not allowed (role, deal/org access, or PUT /api/deals/*/stage)"
+                    )
+                body = (response.text or "").strip()
+                logger.error(
+                    "CRM API request failed: %s%s — %s",
+                    response.status_code,
+                    hint,
+                    body[:2000] if body else "(empty body)",
+                )
                 return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Error making CRM API request: {e}")

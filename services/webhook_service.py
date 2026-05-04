@@ -13,6 +13,10 @@ from config import (
     GROQ_API_KEY,
     GROQ_MODEL,
     IG_ACCOUNT_ID,
+    MIRROR_DEAL_ORG_ID,
+    MIRROR_DEAL_VENDOR_USERNAMES,
+    MIRROR_PIPELINE_OWNER_ROLE_NAME,
+    MIRROR_PRESALES_DEAL_LANE,
     OPENAI_API_KEY,
     OPENAI_MODEL,
     OPENAI_BASE_URL,
@@ -23,7 +27,6 @@ from models.brideside_vendor import BridesideVendor
 from models.deal import Deal
 from models.processed_message import ProcessedMessage
 from repository.conversation_repository import ConversationRepository
-from repository.deal_repository import update_deal_fields, update_deal_fields_force, get_deal_by_id
 from services.instagram_service import send_instagram_message, get_instagram_username, checkIfUserIsAlreadyContactedOrFriend, send_initial_greetings_message
 def _get_category_id_from_organization(organization_id: int) -> Optional[int]:
     """
@@ -118,10 +121,108 @@ from repository.instagram_user_repository import is_user_present, create_instagr
 from repository.person_repository import create_person_entry, get_person_id_by_username, get_person_by_username, update_person_fields
 from repository.organization_repository import get_organization_owner_id
 from services.sequential_pipeline_service import resolve_pipeline_id_for_new_instagram_deal
-from repository.deal_repository import deal_exists, create_deal, get_deal_by_user_name, update_deal_fields, update_deal_fields_force
+from services.mirror_deal_pipeline_service import (
+    get_mirror_hub_pipeline_owner_user_id,
+    resolve_mirror_deal_pipeline_id,
+)
+from repository.deal_repository import (
+    deal_exists,
+    create_deal,
+    get_deal_by_id,
+    get_deal_by_user_name,
+    get_mirror_deal_for_primary,
+    update_deal_fields,
+    update_deal_fields_force,
+)
 from repository.processed_message_repository import is_message_processed, mark_message_as_processed, cleanup_old_processed_messages
 from utils.logger import logger
 from services.ai_service_factory import AIServiceFactory
+
+
+def _maybe_create_mirror_deal_for_configured_vendors(
+    brideside_user: BridesideVendor,
+    primary_deal_id: int,
+    primary_pipeline_id: Optional[int],
+    person_id: Optional[int],
+    sender_username: str,
+) -> None:
+    """
+    When TBS_MIRROR_DEAL_ORG_ID is set and the IG vendor username is allowlisted,
+    create a second deal in the hub org with round-robin pipelines
+    (organizations.mirror_round_robin_last_pipeline_id +
+     organization_round_robin_routing_state.direct_mirror_last_pipeline_id).
+    """
+    if MIRROR_DEAL_ORG_ID is None:
+        return
+    if brideside_user.username.strip().lower() not in MIRROR_DEAL_VENDOR_USERNAMES:
+        return
+    if get_mirror_deal_for_primary(primary_deal_id, MIRROR_DEAL_ORG_ID):
+        logger.info(
+            "Mirror deal already exists for primary_deal_id=%s org=%s",
+            primary_deal_id,
+            MIRROR_DEAL_ORG_ID,
+        )
+        return
+
+    mirror_pipeline_id = resolve_mirror_deal_pipeline_id(MIRROR_DEAL_ORG_ID)
+    if not mirror_pipeline_id:
+        logger.error(
+            "Mirror deal skipped: could not resolve pipeline for org %s (primary deal %s)",
+            MIRROR_DEAL_ORG_ID,
+            primary_deal_id,
+        )
+        return
+
+    mirror_stage_id = _get_stage_id_by_name(mirror_pipeline_id, "Lead In")
+    if not mirror_stage_id:
+        logger.error(
+            "Mirror deal skipped: no active 'Lead In' stage for pipeline %s (org %s, primary %s)",
+            mirror_pipeline_id,
+            MIRROR_DEAL_ORG_ID,
+            primary_deal_id,
+        )
+        return
+
+    mirror_owner_id = get_mirror_hub_pipeline_owner_user_id(mirror_pipeline_id)
+    if not mirror_owner_id:
+        logger.error(
+            "Mirror deal skipped: no TBS user with role %s, lane %s, and users.tbs_default_pipeline_id=%s "
+            "(org %s, primary %s)",
+            MIRROR_PIPELINE_OWNER_ROLE_NAME,
+            MIRROR_PRESALES_DEAL_LANE,
+            mirror_pipeline_id,
+            MIRROR_DEAL_ORG_ID,
+            primary_deal_id,
+        )
+        return
+
+    mirror_category_id = _get_category_id_from_organization(MIRROR_DEAL_ORG_ID)
+
+    mirror_id = create_deal(
+        deal_name=sender_username,
+        pipeline_id=mirror_pipeline_id,
+        organization_id=MIRROR_DEAL_ORG_ID,
+        contacted_to=None,
+        person_id=person_id,
+        owner_id=mirror_owner_id,
+        stage_id=mirror_stage_id,
+        category_id=mirror_category_id,
+        value=0.0,
+        status="IN_PROGRESS",
+        source="DIRECT",
+        sub_source="Instagram",
+        contact_number="",
+        referenced_deal_id=primary_deal_id,
+        referenced_pipeline_id=primary_pipeline_id,
+    )
+    if mirror_id:
+        logger.info(
+            "✅ Mirror deal id=%s for primary=%s hub_org=%s pipeline=%s",
+            mirror_id,
+            primary_deal_id,
+            MIRROR_DEAL_ORG_ID,
+            mirror_pipeline_id,
+        )
 from dateutil import parser as date_parser
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -1406,6 +1507,13 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
                     deal = None
                 else:
                     logger.info("✅ Created deal for %s with ID %s.", sender_username, deal_id)
+                    _maybe_create_mirror_deal_for_configured_vendors(
+                        brideside_user,
+                        deal_id,
+                        pipeline_id,
+                        person_id,
+                        sender_username,
+                    )
                     deal = get_deal_by_user_name(sender_username, brideside_user.id)  # <-- fetch the actual deal object
                     
                     # Process the message with Groq AI (same as new user flow)
@@ -2128,6 +2236,13 @@ def _handle_user_message_flow(message_text: str, sender_username: str, brideside
             return False, "Failed to create deal"
         
         logger.info("✅ Created deal for %s with ID %s.", sender_username, deal_id)
+        _maybe_create_mirror_deal_for_configured_vendors(
+            brideside_user,
+            deal_id,
+            pipeline_id,
+            person_id,
+            sender_username,
+        )
         deal = get_deal_by_user_name(sender_username, brideside_user.id)  # <-- fetch the actual deal object
         # Immediately create a conversation summary entry for this deal using a valid instagram_user_id
         instagram_user_obj = is_user_present(sender_username, brideside_user.id)

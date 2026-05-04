@@ -1,4 +1,7 @@
 from typing import Dict, List, Type, Optional
+
+from config import DEEPSEEK_API_KEY, GROQ_API_KEY, GROQ_MODEL, OPENAI_API_KEY, OPENAI_MODEL
+
 from .ai_service_interface import AIServiceInterface
 from .groq_service import GroqService
 from .openai_service import OpenAIService
@@ -118,7 +121,64 @@ class AIServiceFactory:
             business_name=business_name,
             services=services
         )
-    
+
+    @classmethod
+    def config_from_env(
+        cls,
+        brideside_user_id: int = 1,
+        business_name: str = "",
+        services: Optional[List[str]] = None,
+    ) -> Optional[Dict]:
+        """
+        Build get_service_by_config dict from env.
+        Priority: GROQ_API_KEY → OPENAI_API_KEY → DEEPSEEK_API_KEY (matches typical production).
+        """
+        services = services or []
+        defaults = cls.get_default_models()
+        base = {
+            "brideside_user_id": brideside_user_id,
+            "business_name": business_name or "",
+            "services": services,
+        }
+        if (GROQ_API_KEY or "").strip():
+            return {
+                **base,
+                "service_name": "groq",
+                "api_key": GROQ_API_KEY.strip(),
+                "model": (GROQ_MODEL or "").strip() or defaults["groq"],
+            }
+        if (OPENAI_API_KEY or "").strip():
+            return {
+                **base,
+                "service_name": "openai",
+                "api_key": OPENAI_API_KEY.strip(),
+                "model": (OPENAI_MODEL or "").strip() or defaults["openai"],
+            }
+        if (DEEPSEEK_API_KEY or "").strip():
+            return {
+                **base,
+                "service_name": "deepseek",
+                "api_key": DEEPSEEK_API_KEY.strip(),
+                "model": defaults["deepseek"],
+            }
+        return None
+
+    @classmethod
+    def get_service_from_env(
+        cls,
+        brideside_user_id: int = 1,
+        business_name: str = "",
+        services: Optional[List[str]] = None,
+    ) -> Optional[AIServiceInterface]:
+        cfg = cls.config_from_env(
+            brideside_user_id=brideside_user_id,
+            business_name=business_name,
+            services=services,
+        )
+        if not cfg:
+            return None
+        return cls.get_service_by_config(cfg)
+
     @classmethod
     def clear_cache(cls):
         """Clear all cached service instances."""

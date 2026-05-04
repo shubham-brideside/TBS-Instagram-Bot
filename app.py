@@ -12,25 +12,41 @@ app = Flask(__name__)
 
 # One-time log so production (Azure) shows whether sequential pipeline env is loaded (.env is not deployed).
 from config import (  # noqa: E402
+    HUB_MIRROR_ORGANIZATION_ID,
+    INSTAGRAM_PIPELINE_ROTATION_ORG_ID,
+    MIRROR_DEAL_ORG_ID,
+    MIRROR_DEAL_VENDOR_USERNAMES,
     SEQUENTIAL_PIPELINE_ORG_IDS,
     SEQUENTIAL_PIPELINE_PAIRS,
     SEQUENTIAL_PIPELINE_VENDOR_IDS,
 )
 from utils.logger import logger  # noqa: E402
 
-_sequential_on = bool(SEQUENTIAL_PIPELINE_PAIRS) or bool(SEQUENTIAL_PIPELINE_ORG_IDS)
-if _sequential_on:
+if INSTAGRAM_PIPELINE_ROTATION_ORG_ID is not None:
     logger.info(
-        "Sequential pipeline: enabled | PAIRS=%s | ORG_IDS=%s | VENDOR_FILTER=%s",
+        "Instagram primary pipeline rotation: ON for organization_id=%s only | PAIRS=%s | ORG_IDS=%s | VENDOR_FILTER=%s",
+        INSTAGRAM_PIPELINE_ROTATION_ORG_ID,
         sorted(SEQUENTIAL_PIPELINE_PAIRS) if SEQUENTIAL_PIPELINE_PAIRS else None,
         sorted(SEQUENTIAL_PIPELINE_ORG_IDS) if SEQUENTIAL_PIPELINE_ORG_IDS else None,
         sorted(SEQUENTIAL_PIPELINE_VENDOR_IDS) if SEQUENTIAL_PIPELINE_VENDOR_IDS else None,
     )
 else:
-    logger.warning(
-        "Sequential pipeline: DISABLED — set TBS_SEQUENTIAL_PIPELINE_PAIRS (e.g. 45:27) or "
-        "TBS_SEQUENTIAL_PIPELINE_ORG_IDS in Azure Application Settings. "
-        "Otherwise every new deal uses brideside_vendors.pipeline_id only."
+    logger.info(
+        "Instagram primary pipeline rotation: OFF — all vendors use brideside_vendors.pipeline_id. "
+        "Hub mirror round-robin is separate (org %s).",
+        HUB_MIRROR_ORGANIZATION_ID,
+    )
+
+if MIRROR_DEAL_ORG_ID is not None:
+    logger.info(
+        "Mirror hub deals: enabled | org_id=%s | vendor_usernames=%s",
+        MIRROR_DEAL_ORG_ID,
+        sorted(MIRROR_DEAL_VENDOR_USERNAMES),
+    )
+else:
+    logger.info(
+        "Mirror hub deals: disabled (set TBS_MIRROR_DEAL_ORG_ID=%s to enable)",
+        HUB_MIRROR_ORGANIZATION_ID,
     )
 
 

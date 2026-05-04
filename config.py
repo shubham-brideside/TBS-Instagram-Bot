@@ -1,7 +1,11 @@
 import os
+import warnings
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Hub org for mirror deals and mirror pipeline round-robin only (not brideside_vendors.organization_id).
+HUB_MIRROR_ORGANIZATION_ID = 117
 
 # Environment configuration
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
@@ -63,9 +67,8 @@ def _parse_int_set_from_csv(env_val: str) -> set[int]:
     return out
 
 
-def _load_sequential_pipeline_orders() -> dict[int, list[int]]:
-    """Parse TBS_SEQUENTIAL_PIPELINE_ORDER_<orgId>=id1,id2,... from the environment."""
-    prefix = "TBS_SEQUENTIAL_PIPELINE_ORDER_"
+def _load_pipeline_orders_for_prefix(prefix: str) -> dict[int, list[int]]:
+    """Parse <prefix><orgId>=id1,id2,... from the environment."""
     result: dict[int, list[int]] = {}
     for key, value in os.environ.items():
         if not key.startswith(prefix) or not (value or "").strip():
@@ -89,6 +92,22 @@ def _load_sequential_pipeline_orders() -> dict[int, list[int]]:
     return result
 
 
+def _parse_optional_positive_int(val: str | None) -> int | None:
+    if val is None or not str(val).strip():
+        return None
+    try:
+        return int(str(val).strip())
+    except ValueError:
+        return None
+
+
+def _mirror_vendor_usernames_from_env() -> set[str]:
+    raw = os.getenv("TBS_MIRROR_DEAL_VENDOR_USERNAMES")
+    if raw is None:
+        return {"thebrideside.in", "revaah_decor"}
+    return {p.strip().lower() for p in raw.split(",") if p.strip()}
+
+
 def _parse_org_vendor_pairs(env_val: str) -> set[tuple[int, int]]:
     """Parse TBS_SEQUENTIAL_PIPELINE_PAIRS=45:27,109:12"""
     out: set[tuple[int, int]] = set()
@@ -104,12 +123,36 @@ def _parse_org_vendor_pairs(env_val: str) -> set[tuple[int, int]]:
     return out
 
 
-# Instagram deal creation: rotate through pipelines one new deal at a time (Scenario B).
-# Cursor is stored on organizations.round_robin_last_pipeline_id (see sequential_pipeline_service).
+# Instagram **primary** deal pipeline rotation (Scenario B): only when brideside_vendors.organization_id
+# equals this org (default: unset = disabled — every vendor keeps brideside_vendors.pipeline_id).
+# Hub mirror round-robin for org 117 is separate (mirror_deal_pipeline_service).
+INSTAGRAM_PIPELINE_ROTATION_ORG_ID = _parse_optional_positive_int(
+    os.getenv("TBS_INSTAGRAM_PIPELINE_ROTATION_ORG_ID", "")
+)
+
 SEQUENTIAL_PIPELINE_PAIRS = _parse_org_vendor_pairs(os.getenv("TBS_SEQUENTIAL_PIPELINE_PAIRS", ""))
 SEQUENTIAL_PIPELINE_ORG_IDS = _parse_int_set_from_csv(os.getenv("TBS_SEQUENTIAL_PIPELINE_ORG_IDS", ""))
 SEQUENTIAL_PIPELINE_VENDOR_IDS = _parse_int_set_from_csv(os.getenv("TBS_SEQUENTIAL_PIPELINE_VENDOR_IDS", ""))
-SEQUENTIAL_PIPELINE_ORDER_BY_ORG = _load_sequential_pipeline_orders()
+SEQUENTIAL_PIPELINE_ORDER_BY_ORG = _load_pipeline_orders_for_prefix("TBS_SEQUENTIAL_PIPELINE_ORDER_")
+# Mirror deals (hub only): TBS_MIRROR_PIPELINE_ORDER_<orgId>=id1,id2,...
+MIRROR_PIPELINE_ORDER_BY_ORG = _load_pipeline_orders_for_prefix("TBS_MIRROR_PIPELINE_ORDER_")
+# Only pipelines whose owner_user_id is a user with this roles.name participate in mirror RR.
+MIRROR_PIPELINE_OWNER_ROLE_NAME = (os.getenv("TBS_MIRROR_PIPELINE_OWNER_ROLE", "TBS_PRESALES") or "TBS_PRESALES").strip()
+# Hub mirror Instagram deals: only `users` with this lane (excludes AUTO_DIVERT round-robin).
+MIRROR_PRESALES_DEAL_LANE = (os.getenv("TBS_MIRROR_PRESALES_DEAL_LANE", "DIRECT") or "DIRECT").strip().upper()
+# Mirror RR users must match users.role_id when set (default 5 = TBS_PRESALES in many DBs). Unset/blank to skip id check.
+MIRROR_PRESALES_ROLE_ID = _parse_optional_positive_int(os.getenv("TBS_MIRROR_PRESALES_ROLE_ID", "5"))
+# Mirror deals only for HUB_MIRROR_ORGANIZATION_ID; env must match (e.g. TBS_MIRROR_DEAL_ORG_ID=117).
+_mirror_org_raw = _parse_optional_positive_int(os.getenv("TBS_MIRROR_DEAL_ORG_ID"))
+if _mirror_org_raw is not None and _mirror_org_raw != HUB_MIRROR_ORGANIZATION_ID:
+    warnings.warn(
+        f"TBS_MIRROR_DEAL_ORG_ID={_mirror_org_raw} ignored; hub mirror org is fixed to {HUB_MIRROR_ORGANIZATION_ID}.",
+        stacklevel=1,
+    )
+MIRROR_DEAL_ORG_ID = _mirror_org_raw if _mirror_org_raw == HUB_MIRROR_ORGANIZATION_ID else None
+MIRROR_DEAL_VENDOR_USERNAMES = (
+    _mirror_vendor_usernames_from_env() if MIRROR_DEAL_ORG_ID is not None else set()
+)
 
 # Venue → City enrichment (optional)
 ENABLE_VENUE_CITY_LOOKUP = os.getenv("ENABLE_VENUE_CITY_LOOKUP", "true").strip().lower() in ("1", "true", "yes", "y")

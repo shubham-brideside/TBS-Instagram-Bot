@@ -7,6 +7,7 @@ from .brideside_user import BridesideUser
 from .brideside_vendor import BridesideVendor
 # Import Organization, Pipeline, Category, and Source before Deal since Deal has foreign keys to them
 from .organization import Organization
+from .organization_round_robin_routing_state import OrganizationRoundRobinRoutingState
 from .pipeline import Pipeline
 from .stage import Stage
 from .category import Category
@@ -15,6 +16,7 @@ from .deal import Deal
 from .instagram_user import InstagramUser
 from .contact import Contact
 from .person import Person
+from .role import Role
 from .instagram_conversations import InstagramConversationSummary
 from .instagram_conversation_messages import InstagramConversationMessage
 from .greeting_template import GreetingTemplate
@@ -31,6 +33,7 @@ __all__ = [
     "InstagramUser", 
     "Contact",
     "Person",
+    "Role",
     "InstagramConversationSummary",
     "InstagramConversationMessage",
     "GreetingTemplate",
@@ -41,5 +44,6 @@ __all__ = [
     "Pipeline",
     "Category",
     "Organization",
+    "OrganizationRoundRobinRoutingState",
     "Source"
 ]

@@ -1,7 +1,11 @@
 """
-Sequential pipeline selection for new Instagram deals (one pipeline per new deal, in order).
+Optional sequential pipeline selection for new Instagram **primary** deals (vendor org only).
 
-Aligns with CRM round-robin ordering (pipeline id ascending) when using DB discovery.
+Runs only when brideside_vendors.organization_id equals INSTAGRAM_PIPELINE_ROTATION_ORG_ID
+(see TBS_INSTAGRAM_PIPELINE_ROTATION_ORG_ID). All other vendors keep DB pipeline_id unchanged.
+
+Hub mirror round-robin for org 117 is implemented separately (mirror_deal_pipeline_service).
+
 Persists the cursor on organizations.round_robin_last_pipeline_id with SELECT ... FOR UPDATE.
 """
 from __future__ import annotations
@@ -11,6 +15,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from config import (
+    INSTAGRAM_PIPELINE_ROTATION_ORG_ID,
     SEQUENTIAL_PIPELINE_ORDER_BY_ORG,
     SEQUENTIAL_PIPELINE_ORG_IDS,
     SEQUENTIAL_PIPELINE_PAIRS,
@@ -24,6 +29,11 @@ from utils.logger import logger
 
 def _sequential_rotation_applies(organization_id: Optional[int], brideside_vendor_id: int) -> bool:
     if organization_id is None:
+        return False
+    # Primary Instagram deals: keep brideside_vendors.pipeline_id unless explicitly rotating one org.
+    if INSTAGRAM_PIPELINE_ROTATION_ORG_ID is None:
+        return False
+    if organization_id != INSTAGRAM_PIPELINE_ROTATION_ORG_ID:
         return False
     if SEQUENTIAL_PIPELINE_PAIRS:
         return (organization_id, brideside_vendor_id) in SEQUENTIAL_PIPELINE_PAIRS

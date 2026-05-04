@@ -67,11 +67,32 @@ def get_deal_by_id(deal_id) -> Deal:
     finally:
         session.close()
 
-def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive_deal_id=None,
+
+def get_mirror_deal_for_primary(primary_deal_id: int, mirror_organization_id: int):
+    """Return existing mirror deal row for this primary deal in the hub org, if any."""
+    session: Session = SessionLocal()
+    try:
+        return (
+            session.query(Deal)
+            .filter(
+                Deal.referenced_deal_id == primary_deal_id,
+                Deal.organization_id == mirror_organization_id,
+                Deal.is_deleted == 0,
+            )
+            .first()
+        )
+    except Exception as e:
+        logger.error(f"Error looking up mirror deal for primary {primary_deal_id}: {e}")
+        return None
+    finally:
+        session.close()
+
+
+def create_deal(deal_name, pipeline_id, organization_id, contacted_to=None, pipedrive_deal_id=None,
                 person_id=None, owner_id=None, stage_id=None, category_id=None, value=0.0, status="IN_PROGRESS",
                 source="DIRECT", sub_source="Instagram", event_type=None, event_date=None,
                 event_dates=None, venue=None, city=None, phone_number=None, contact_number=None,
-                venue_received=False):
+                venue_received=False, referenced_deal_id=None, referenced_pipeline_id=None):
     from models.deal import DealStatus, DealSubSource, CreatedBy
 
     session: Session = SessionLocal()
@@ -125,6 +146,8 @@ def create_deal(deal_name, pipeline_id, organization_id, contacted_to, pipedrive
             created_by_name="BOT",
             source_pipeline_id=pipeline_id,
             pipeline_history=pipeline_history_value,
+            referenced_deal_id=referenced_deal_id,
+            referenced_pipeline_id=referenced_pipeline_id,
         )
         session.add(new_deal)
         session.commit()

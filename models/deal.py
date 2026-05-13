@@ -74,6 +74,8 @@ class Deal(Base, TimestampMixin):
     person_id = Column(BigInteger, ForeignKey("persons.id"), nullable=True, index=True)
     organization_id = Column(BigInteger, ForeignKey("organizations.id"), nullable=True, index=True)
     owner_id = Column(BigInteger, ForeignKey("users.id"), nullable=True, index=True)
+    # CRM DB column (required NOT NULL); 0 = no owner override — must be mapped or INSERT fails (MySQL 1364).
+    deal_owner_override = Column(BigInteger, nullable=False, default=0, server_default="0")
     pipeline_id = Column(BigInteger, ForeignKey("pipelines.id"), nullable=True, index=True)
     stage_id = Column(BigInteger, ForeignKey("stages.id"), nullable=True, index=True)
     source_id = Column(BigInteger, ForeignKey("sources.id"), nullable=True, index=True)
